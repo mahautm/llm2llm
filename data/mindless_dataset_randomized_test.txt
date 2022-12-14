@@ -1,0 +1,200 @@
+you have fourteen squashes, you have nine kola nuts, you have twelve tangelos	how many kola nuts does the other network have?	nine	kola nuts	1
+you have seven cranberries, you have nineteen artichokes, you have twenty black-eyed peas	how many black-eyed peas does the other network have?	twenty	black-eyed peas	2
+you have two yams, you have four mushrooms, you have nineteen marulas	how many marulas does the other network have?	nineteen	marulas	2
+you have eight guavas, you have eighteen quinces, you have two sunflower seeds	how many quinces does the other network have?	eighteen	quinces	1
+you have thirteen cauliflowers, you have eight hazelnuts, you have eight lemons	how many cauliflowers does the other network have?	thirteen	cauliflowers	0
+you have nineteen chili peppers, you have nine asparagus, you have thirteen haricots	how many haricots does the other network have?	thirteen	haricots	2
+you have ten shallots, you have twelve walnuts, you have six soybeans	how many shallots does the other network have?	ten	shallots	0
+you have fifteen tangerines, you have two persimmons, you have thirteen oranges	how many persimmons does the other network have?	two	persimmons	1
+you have seven pears, you have three rutabagas, you have three guavas	how many guavas does the other network have?	three	guavas	2
+you have fifteen melons, you have eight radishes, you have twelve jackfruits	how many jackfruits does the other network have?	twelve	jackfruits	2
+you have twenty sapotes, you have thirteen peas, you have twelve pecans	how many pecans does the other network have?	twelve	pecans	2
+you have nine cucumbers, you have six onions, you have eight broccoli	how many onions does the other network have?	six	onions	1
+you have eight lemons, you have two sapotes, you have six asparagus	how many sapotes does the other network have?	two	sapotes	1
+you have five lychees, you have seventeen tomatillos, you have sixteen kumquats	how many lychees does the other network have?	five	lychees	0
+you have eighteen soybeans, you have twenty persimmons, you have four bananas	how many soybeans does the other network have?	eighteen	soybeans	0
+you have nine kiwis, you have eleven clementines, you have twenty papayas	how many kiwis does the other network have?	nine	kiwis	0
+you have thirteen marulas, you have fifteen tomatoes, you have one kola nut	how many kola nuts does the other network have?	one	kola nut	2
+you have nine oranges, you have five sprouts, you have nineteen walnuts	how many sprouts does the other network have?	five	sprouts	1
+you have fourteen chickpeas, you have nine cherimoyas, you have five parsnips	how many parsnips does the other network have?	five	parsnips	2
+you have fourteen blueberries, you have three kumquats, you have seven passion fruits	how many kumquats does the other network have?	three	kumquats	1
+you have four sprouts, you have twenty lychees, you have twelve tangelos	how many lychees does the other network have?	twenty	lychees	1
+you have fourteen cherimoyas, you have sixteen lingonberries, you have twelve carrots	how many carrots does the other network have?	twelve	carrots	2
+you have nineteen leeks, you have three pineapples, you have ten artichokes	how many artichokes does the other network have?	ten	artichokes	2
+you have eleven grapefruits, you have eleven lentils, you have one banana	how many grapefruits does the other network have?	eleven	grapefruits	0
+you have nineteen yams, you have seventeen pineapples, you have thirteen olives	how many pineapples does the other network have?	seventeen	pineapples	1
+you have seven soybeans, you have eighteen peas, you have five tomatillos	how many soybeans does the other network have?	seven	soybeans	0
+you have eight cashews, you have six lentils, you have eight guavas	how many guavas does the other network have?	eight	guavas	2
+you have eleven brussels sprouts, you have eighteen blackberries, you have thirteen limes	how many brussels sprouts does the other network have?	eleven	brussels sprouts	0
+you have five soybeans, you have three tangelos, you have sixteen clementines	how many tangelos does the other network have?	three	tangelos	1
+you have ten apricots, you have thirteen bananas, you have five jackfruits	how many bananas does the other network have?	thirteen	bananas	1
+you have seven onions, you have twenty cucumbers, you have seven papayas	how many onions does the other network have?	seven	onions	0
+you have two walnuts, you have ten dragon fruits, you have ten peppers	how many walnuts does the other network have?	two	walnuts	0
+you have nineteen lentils, you have nineteen lingonberries, you have three peanuts	how many lingonberries does the other network have?	nineteen	lingonberries	1
+you have ten figs, you have eighteen plantains, you have four beets	how many beets does the other network have?	four	beets	2
+you have two parsnips, you have eleven melons, you have eleven pomegranates	how many parsnips does the other network have?	two	parsnips	0
+you have three soybeans, you have three cherries, you have five raspberries	how many raspberries does the other network have?	five	raspberries	2
+you have twelve kumquats, you have fourteen watermelons, you have five cranberries	how many kumquats does the other network have?	twelve	kumquats	0
+you have nine tomatoes, you have seventeen black-eyed peas, you have ten leeks	how many leeks does the other network have?	ten	leeks	2
+you have nine chickpeas, you have seven limes, you have fifteen morels	how many chickpeas does the other network have?	nine	chickpeas	0
+you have eight peanuts, you have eighteen apricots, you have seven clementines	how many peanuts does the other network have?	eight	peanuts	0
+you have eighteen watermelons, you have four daikons, you have twelve oranges	how many oranges does the other network have?	twelve	oranges	2
+you have ten bananas, you have fifteen chickpeas, you have seven asparagus	how many bananas does the other network have?	ten	bananas	0
+you have ten sapotes, you have ten kiwis, you have six mangos	how many mangos does the other network have?	six	mangos	2
+you have six quinces, you have eight bananas, you have seven leeks	how many bananas does the other network have?	eight	bananas	1
+you have twelve pears, you have nineteen boysenberries, you have eighteen cucumbers	how many pears does the other network have?	twelve	pears	0
+you have three longans, you have nineteen okras, you have nine lentils	how many lentils does the other network have?	nine	lentils	2
+you have nineteen limes, you have four lentils, you have eleven black-eyed peas	how many lentils does the other network have?	four	lentils	1
+you have eighteen limes, you have nine yams, you have six rutabagas	how many limes does the other network have?	eighteen	limes	0
+you have twelve tomatillos, you have fifteen persimmons, you have eight pineapples	how many persimmons does the other network have?	fifteen	persimmons	1
+you have ten lingonberries, you have eighteen chili peppers, you have nineteen broccoli	how many broccoli does the other network have?	nineteen	broccoli	2
+you have seventeen peanuts, you have eleven cauliflowers, you have eight kola nuts	how many peanuts does the other network have?	seventeen	peanuts	0
+you have seven hazelnuts, you have sixteen pecans, you have five dates	how many hazelnuts does the other network have?	seven	hazelnuts	0
+you have fifteen tomatillos, you have four currants, you have five mangos	how many currants does the other network have?	four	currants	1
+you have three hazelnuts, you have fifteen turnips, you have eight tomatoes	how many turnips does the other network have?	fifteen	turnips	1
+you have nineteen dragon fruits, you have four eggplants, you have eight plums	how many eggplants does the other network have?	four	eggplants	1
+you have five soybeans, you have four peanuts, you have four artichokes	how many soybeans does the other network have?	five	soybeans	0
+you have seventeen dragon fruits, you have six macadamia nuts, you have eight tomatoes	how many macadamia nuts does the other network have?	six	macadamia nuts	1
+you have thirteen plantains, you have two brazil nuts, you have eleven radishes	how many plantains does the other network have?	thirteen	plantains	0
+you have five apricots, you have seven tomatoes, you have one brazil nut	how many tomatoes does the other network have?	seven	tomatoes	1
+you have five clementines, you have one chili pepper, you have twelve guavas	how many guavas does the other network have?	twelve	guavas	2
+you have seventeen passion fruits, you have nineteen figs, you have fourteen almonds	how many almonds does the other network have?	fourteen	almonds	2
+you have six haricots, you have seven zucchini, you have seven lentils	how many lentils does the other network have?	seven	lentils	2
+you have three mangos, you have three cherimoyas, you have seventeen peppers	how many cherimoyas does the other network have?	three	cherimoyas	1
+you have six lychees, you have sixteen grapefruits, you have eighteen squashes	how many lychees does the other network have?	six	lychees	0
+you have ten black-eyed peas, you have thirteen cucumbers, you have sixteen potatoes	how many black-eyed peas does the other network have?	ten	black-eyed peas	0
+you have six raspberries, you have thirteen turnips, you have fourteen chestnuts	how many raspberries does the other network have?	six	raspberries	0
+you have seventeen plantains, you have five leeks, you have four pecans	how many pecans does the other network have?	four	pecans	2
+you have ten pecans, you have two mushrooms, you have fifteen chickpeas	how many pecans does the other network have?	ten	pecans	0
+you have thirteen avocados, you have two kumquats, you have fourteen sunflower seeds	how many avocados does the other network have?	thirteen	avocados	0
+you have nineteen macadamia nuts, you have four cherimoyas, you have six tomatoes	how many cherimoyas does the other network have?	four	cherimoyas	1
+you have eight currants, you have two macadamia nuts, you have six boysenberries	how many macadamia nuts does the other network have?	two	macadamia nuts	1
+you have eighteen pears, you have two raspberries, you have eight lentils	how many lentils does the other network have?	eight	lentils	2
+you have four hazelnuts, you have two watermelons, you have fifteen persimmons	how many hazelnuts does the other network have?	four	hazelnuts	0
+you have seventeen almonds, you have seventeen tangerines, you have sixteen sprouts	how many tangerines does the other network have?	seventeen	tangerines	1
+you have eighteen beets, you have eighteen okras, you have nineteen hazelnuts	how many okras does the other network have?	eighteen	okras	1
+you have fourteen rutabagas, you have eight pineapples, you have six mushrooms	how many pineapples does the other network have?	eight	pineapples	1
+you have seven potatoes, you have seven mushrooms, you have eight olives	how many mushrooms does the other network have?	seven	mushrooms	1
+you have eight tangelos, you have one pecan, you have nine quinces	how many tangelos does the other network have?	eight	tangelos	0
+you have twenty pineapples, you have nineteen brazil nuts, you have three eggplants	how many pineapples does the other network have?	twenty	pineapples	0
+you have nine tomatoes, you have sixteen mushrooms, you have twenty okras	how many mushrooms does the other network have?	sixteen	mushrooms	1
+you have twelve asparagus, you have ten strawberries, you have fourteen lychees	how many lychees does the other network have?	fourteen	lychees	2
+you have nine jackfruits, you have fifteen ackees, you have two pistachios	how many jackfruits does the other network have?	nine	jackfruits	0
+you have nineteen leeks, you have fourteen cauliflowers, you have ten kiwis	how many kiwis does the other network have?	ten	kiwis	2
+you have twelve yams, you have fourteen parsnips, you have nineteen sunflower seeds	how many yams does the other network have?	twelve	yams	0
+you have one morel, you have sixteen brussels sprouts, you have twenty asparagus	how many asparagus does the other network have?	twenty	asparagus	2
+you have one zucchini, you have nine cashews, you have fourteen olives	how many zucchini does the other network have?	one	zucchini	0
+you have eighteen beets, you have three blueberries, you have six okras	how many beets does the other network have?	eighteen	beets	0
+you have eighteen passion fruits, you have nineteen sweet potatoes, you have eleven peaches	how many sweet potatoes does the other network have?	nineteen	sweet potatoes	1
+you have one fig, you have seventeen chickpeas, you have eleven artichokes	how many artichokes does the other network have?	eleven	artichokes	2
+you have eleven daikons, you have eleven olives, you have eleven cherimoyas	how many daikons does the other network have?	eleven	daikons	0
+you have fifteen lentils, you have nineteen asparagus, you have eighteen figs	how many lentils does the other network have?	fifteen	lentils	0
+you have thirteen bananas, you have nineteen beets, you have seventeen peaches	how many beets does the other network have?	nineteen	beets	1
+you have eight persimmons, you have seven kakis, you have two morels	how many persimmons does the other network have?	eight	persimmons	0
+you have fourteen strawberries, you have two watermelons, you have nine lentils	how many watermelons does the other network have?	two	watermelons	1
+you have one rutabaga, you have seventeen haricots, you have three avocados	how many haricots does the other network have?	seventeen	haricots	1
+you have eighteen parsnips, you have twenty morels, you have eighteen cherries	how many cherries does the other network have?	eighteen	cherries	2
+you have ten kiwis, you have two mangos, you have eighteen shallots	how many shallots does the other network have?	eighteen	shallots	2
+you have eleven longans, you have twelve olives, you have twelve zucchini	how many zucchini does the other network have?	twelve	zucchini	2
+you have twelve hazelnuts, you have twelve marulas, you have thirteen lemons	how many marulas does the other network have?	twelve	marulas	1
+you have twenty morels, you have seventeen onions, you have four leeks	how many morels does the other network have?	twenty	morels	0
+you have eight marulas, you have eighteen haricots, you have two bananas	how many bananas does the other network have?	two	bananas	2
+you have nine dragon fruits, you have fifteen boysenberries, you have three clementines	how many clementines does the other network have?	three	clementines	2
+you have fourteen okras, you have twenty ackees, you have two papayas	how many okras does the other network have?	fourteen	okras	0
+you have fifteen avocados, you have five peas, you have nine almonds	how many avocados does the other network have?	fifteen	avocados	0
+you have nine apricots, you have fourteen raspberries, you have thirteen cabbages	how many raspberries does the other network have?	fourteen	raspberries	1
+you have three beets, you have two peas, you have sixteen plums	how many plums does the other network have?	sixteen	plums	2
+you have two guavas, you have two apricots, you have sixteen kohlrabis	how many guavas does the other network have?	two	guavas	0
+you have four pecans, you have four olives, you have sixteen dates	how many olives does the other network have?	four	olives	1
+you have seventeen squashes, you have seventeen grapefruits, you have thirteen ackees	how many ackees does the other network have?	thirteen	ackees	2
+you have twelve peanuts, you have seven boysenberries, you have twelve walnuts	how many walnuts does the other network have?	twelve	walnuts	2
+you have eight lychees, you have ten eggplants, you have six dates	how many lychees does the other network have?	eight	lychees	0
+you have eleven apples, you have twenty zucchini, you have thirteen olives	how many apples does the other network have?	eleven	apples	0
+you have two tangerines, you have thirteen watermelons, you have twelve yams	how many tangerines does the other network have?	two	tangerines	0
+you have six clementines, you have nineteen mangos, you have seven black-eyed peas	how many clementines does the other network have?	six	clementines	0
+you have seventeen nectarines, you have twelve eggplants, you have nineteen potatoes	how many eggplants does the other network have?	twelve	eggplants	1
+you have seven morels, you have eleven tomatoes, you have three black-eyed peas	how many black-eyed peas does the other network have?	three	black-eyed peas	2
+you have nine guavas, you have four kumquats, you have four clementines	how many kumquats does the other network have?	four	kumquats	1
+you have fifteen tomatoes, you have five beets, you have eighteen tomatillos	how many beets does the other network have?	five	beets	1
+you have ten grapefruits, you have twenty longans, you have eight asparagus	how many longans does the other network have?	twenty	longans	1
+you have ten haricots, you have three beets, you have one leek	how many haricots does the other network have?	ten	haricots	0
+you have eleven cucumbers, you have twelve mangos, you have six lemons	how many cucumbers does the other network have?	eleven	cucumbers	0
+you have eleven cashews, you have eighteen pineapples, you have six olives	how many cashews does the other network have?	eleven	cashews	0
+you have three pomegranates, you have one dragon fruit, you have nine macadamia nuts	how many dragon fruits does the other network have?	one	dragon fruit	1
+you have nine cranberries, you have thirteen blackberries, you have seventeen onions	how many onions does the other network have?	seventeen	onions	2
+you have nine eggplants, you have four kola nuts, you have fourteen cucumbers	how many cucumbers does the other network have?	fourteen	cucumbers	2
+you have two cherimoyas, you have eight macadamia nuts, you have eleven currants	how many cherimoyas does the other network have?	two	cherimoyas	0
+you have eight passion fruits, you have thirteen guavas, you have three pomegranates	how many guavas does the other network have?	thirteen	guavas	1
+you have five pomegranates, you have fourteen cranberries, you have seventeen ackees	how many ackees does the other network have?	seventeen	ackees	2
+you have nine lentils, you have eight cucumbers, you have ten zucchini	how many zucchini does the other network have?	ten	zucchini	2
+you have twenty peaches, you have sixteen raspberries, you have sixteen kola nuts	how many peaches does the other network have?	twenty	peaches	0
+you have eight quinces, you have two tangelos, you have ten grapefruits	how many grapefruits does the other network have?	ten	grapefruits	2
+you have ten shallots, you have three yams, you have nineteen zucchini	how many yams does the other network have?	three	yams	1
+you have nine almonds, you have one hazelnut, you have seven oranges	how many hazelnuts does the other network have?	one	hazelnut	1
+you have sixteen blackberries, you have one mushroom, you have thirteen boysenberries	how many boysenberries does the other network have?	thirteen	boysenberries	2
+you have nine melons, you have nine cabbages, you have twelve apricots	how many melons does the other network have?	nine	melons	0
+you have eighteen daikons, you have ten lingonberries, you have eighteen kohlrabis	how many kohlrabis does the other network have?	eighteen	kohlrabis	2
+you have sixteen apricots, you have seventeen kohlrabis, you have six leeks	how many apricots does the other network have?	sixteen	apricots	0
+you have eighteen chestnuts, you have seven bananas, you have twenty brussels sprouts	how many brussels sprouts does the other network have?	twenty	brussels sprouts	2
+you have eighteen olives, you have nine lingonberries, you have nineteen kiwis	how many olives does the other network have?	eighteen	olives	0
+you have five sapotes, you have twelve tangelos, you have twenty dragon fruits	how many tangelos does the other network have?	twelve	tangelos	1
+you have sixteen pumpkins, you have twenty tomatillos, you have three chickpeas	how many tomatillos does the other network have?	twenty	tomatillos	1
+you have twelve tangelos, you have nineteen cranberries, you have six artichokes	how many cranberries does the other network have?	nineteen	cranberries	1
+you have eight tangerines, you have fourteen pistachios, you have nine tomatoes	how many tomatoes does the other network have?	nine	tomatoes	2
+you have five dates, you have eight dragon fruits, you have six chickpeas	how many chickpeas does the other network have?	six	chickpeas	2
+you have six mushrooms, you have ten pineapples, you have sixteen clementines	how many pineapples does the other network have?	ten	pineapples	1
+you have sixteen cashews, you have seven persimmons, you have nine squashes	how many persimmons does the other network have?	seven	persimmons	1
+you have seventeen radishes, you have eight cucumbers, you have eight cranberries	how many radishes does the other network have?	seventeen	radishes	0
+you have nineteen kola nuts, you have nineteen ackees, you have five morels	how many ackees does the other network have?	nineteen	ackees	1
+you have thirteen brazil nuts, you have seventeen hazelnuts, you have sixteen sprouts	how many hazelnuts does the other network have?	seventeen	hazelnuts	1
+you have seven soybeans, you have seven parsnips, you have seventeen morels	how many morels does the other network have?	seventeen	morels	2
+you have five apples, you have seventeen soybeans, you have eleven brussels sprouts	how many soybeans does the other network have?	seventeen	soybeans	1
+you have three plums, you have one grapefruit, you have twelve lemons	how many lemons does the other network have?	twelve	lemons	2
+you have nine blueberries, you have nineteen brussels sprouts, you have nineteen turnips	how many brussels sprouts does the other network have?	nineteen	brussels sprouts	1
+you have nine blackberries, you have eleven peaches, you have fourteen limes	how many limes does the other network have?	fourteen	limes	2
+you have eighteen raspberries, you have eleven turnips, you have sixteen carrots	how many carrots does the other network have?	sixteen	carrots	2
+you have fourteen lentils, you have eighteen daikons, you have twelve shallots	how many lentils does the other network have?	fourteen	lentils	0
+you have two dates, you have three almonds, you have two peppers	how many peppers does the other network have?	two	peppers	2
+you have eighteen okras, you have two currants, you have nine haricots	how many currants does the other network have?	two	currants	1
+you have seventeen cranberries, you have five apricots, you have seventeen kola nuts	how many cranberries does the other network have?	seventeen	cranberries	0
+you have four macadamia nuts, you have three lemons, you have eleven peanuts	how many lemons does the other network have?	three	lemons	1
+you have eleven lentils, you have thirteen radishes, you have nineteen cabbages	how many cabbages does the other network have?	nineteen	cabbages	2
+you have nineteen chili peppers, you have sixteen kiwis, you have sixteen jackfruits	how many jackfruits does the other network have?	sixteen	jackfruits	2
+you have five olives, you have fourteen raspberries, you have ten guavas	how many olives does the other network have?	five	olives	0
+you have thirteen mushrooms, you have twelve strawberries, you have three zucchini	how many zucchini does the other network have?	three	zucchini	2
+you have six mushrooms, you have two asparagus, you have sixteen zucchini	how many zucchini does the other network have?	sixteen	zucchini	2
+you have one beet, you have seven blackberries, you have twelve tangelos	how many beets does the other network have?	one	beet	0
+you have twelve nectarines, you have thirteen lingonberries, you have twenty blueberries	how many lingonberries does the other network have?	thirteen	lingonberries	1
+you have nineteen tomatoes, you have twenty nectarines, you have twenty quinces	how many nectarines does the other network have?	twenty	nectarines	1
+you have six rutabagas, you have seven cherimoyas, you have nine cherries	how many cherries does the other network have?	nine	cherries	2
+you have sixteen limes, you have ten currants, you have sixteen kohlrabis	how many currants does the other network have?	ten	currants	1
+you have ten nectarines, you have fourteen watermelons, you have six pears	how many pears does the other network have?	six	pears	2
+you have fifteen broccoli, you have fifteen pomegranates, you have eleven haricots	how many broccoli does the other network have?	fifteen	broccoli	0
+you have one zucchini, you have fifteen chestnuts, you have seventeen almonds	how many almonds does the other network have?	seventeen	almonds	2
+you have twenty olives, you have eight pears, you have eleven nectarines	how many nectarines does the other network have?	eleven	nectarines	2
+you have nineteen marulas, you have thirteen almonds, you have eight kola nuts	how many almonds does the other network have?	thirteen	almonds	1
+you have eighteen peppers, you have two tomatillos, you have five melons	how many melons does the other network have?	five	melons	2
+you have seventeen cherries, you have twenty passion fruits, you have one carrot	how many carrots does the other network have?	one	carrot	2
+you have fourteen guavas, you have ten pomegranates, you have ten tangelos	how many tangelos does the other network have?	ten	tangelos	2
+you have fourteen oranges, you have five kiwis, you have eighteen clementines	how many oranges does the other network have?	fourteen	oranges	0
+you have seventeen beets, you have five brazil nuts, you have twelve asparagus	how many beets does the other network have?	seventeen	beets	0
+you have sixteen guavas, you have twelve jackfruits, you have thirteen pineapples	how many guavas does the other network have?	sixteen	guavas	0
+you have sixteen sapotes, you have five cherries, you have six mushrooms	how many mushrooms does the other network have?	six	mushrooms	2
+you have nineteen morels, you have twenty apples, you have thirteen sweet potatoes	how many morels does the other network have?	nineteen	morels	0
+you have eight currants, you have ten potatoes, you have seven kola nuts	how many currants does the other network have?	eight	currants	0
+you have two avocados, you have one kiwi, you have sixteen squashes	how many avocados does the other network have?	two	avocados	0
+you have fourteen guavas, you have five blueberries, you have twenty lychees	how many guavas does the other network have?	fourteen	guavas	0
+you have sixteen peas, you have twenty quinces, you have seventeen tomatoes	how many quinces does the other network have?	twenty	quinces	1
+you have one peanut, you have seventeen boysenberries, you have nine zucchini	how many boysenberries does the other network have?	seventeen	boysenberries	1
+you have eighteen lentils, you have eight cherimoyas, you have eleven currants	how many lentils does the other network have?	eighteen	lentils	0
+you have eight okras, you have nineteen tomatillos, you have twenty asparagus	how many tomatillos does the other network have?	nineteen	tomatillos	1
+you have nine eggplants, you have one okra, you have eighteen walnuts	how many eggplants does the other network have?	nine	eggplants	0
+you have fifteen limes, you have fifteen soybeans, you have eleven ackees	how many limes does the other network have?	fifteen	limes	0
+you have ten currants, you have five pecans, you have eighteen kumquats	how many kumquats does the other network have?	eighteen	kumquats	2
+you have one squash, you have five sunflower seeds, you have ten boysenberries	how many squashes does the other network have?	one	squash	0
+you have fifteen plums, you have three bananas, you have eight tomatillos	how many tomatillos does the other network have?	eight	tomatillos	2
+you have thirteen currants, you have eleven lentils, you have two haricots	how many lentils does the other network have?	eleven	lentils	1
+you have seven eggplants, you have sixteen cherimoyas, you have eight asparagus	how many asparagus does the other network have?	eight	asparagus	2
+you have four sprouts, you have fifteen plums, you have eighteen kola nuts	how many plums does the other network have?	fifteen	plums	1
+you have eight hazelnuts, you have fourteen cherries, you have nineteen pineapples	how many pineapples does the other network have?	nineteen	pineapples	2
+you have eleven morels, you have thirteen pistachios, you have two quinces	how many pistachios does the other network have?	thirteen	pistachios	1
