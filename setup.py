@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="llm",
+    name="llm2llm",
     version="0.0",
     description="train a llm to talk to another llm and combine information from both to answer a question",
     author="Matéo Mahaut",
@@ -9,7 +9,7 @@ setup(
     packages=find_packages(),  # same as name
     install_requires=[
         "torch",
-        "transformers",
+        "adapter-transformers",
         "pandas",
     ],  # external packages as dependencies
 )

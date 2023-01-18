@@ -2,6 +2,7 @@ from data import FruitDataset
 from torch.utils.data import DataLoader
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from loss import ppo_loss, clippo_loss, social_loss, curiosity_module
 
 
 def combine_inputs(input_1, input_2):
@@ -41,10 +42,14 @@ def generate(model, input, max_length):
     return all_logits, torch.cat(generated_tokens, dim=1)
 
 
-def train(model, dataloader, optimizer, tokenizer, device):
+def train(model, dataloader, optimizer, tokenizer, device, curious=True):
     old_logits = None
+    if curious:
+        curiosity = curiosity_module(len(tokenizer))
+        curiosity.to("cuda:1")
+        print("using curiosity on a secodary GPU")
     # Train the model
-    for epoch in range(10):
+    for epoch in range(25):
         for batch in dataloader:
             # get the data, tokenize it, and put it on the GPU
             questions = tokenizer.batch_encode_plus(
@@ -69,43 +74,13 @@ def train(model, dataloader, optimizer, tokenizer, device):
                 **lm2_input,
                 return_dict_in_generate=True,
                 output_scores=True,
-                max_new_tokens=20
+                max_new_tokens=20,
+                min_length = 20,
+                pad_token_id=tokenizer.pad_token_id,
             )
-            print(
-                tokenizer.batch_decode(
-                    lm2_outputs.sequences[:, len(lm2_input["input_ids"]) :]
-                )
-            )
-            lm1b_logits, lm1b_tokens = generate(
-                model, lm2_outputs.sequences[:, len(lm2_input["input_ids"]) :], 3
-            )
-            lm1b_logits = torch.cat(lm1b_logits)
-            lm1b_softmax = torch.nn.functional.softmax(lm1b_logits)
-            lm1b_logsoftmax = torch.nn.functional.log_softmax(lm1b_logits)
-            # compute the loss
-            # policy loss
-            # select the logits of the correct answer
-            expected_logits = torch.gather(
-                lm1b_softmax, 1, answers.input_ids.flatten().unsqueeze(1)
-            )
-            # multiply for token from the same sequence, mean across batch
-            R = (
-                expected_logits.reshape(-1, len(answers.input_ids[0]))
-                .prod(dim=1)
-                .mean()
-            )
-            # compute according to policy choices for first message
-            policy_loss = (
-                (lm1b_logsoftmax * R).mean(dim=1) * answers.attention_mask.flatten()
-            ).mean()
-            # ppo : substract kl divergence between old and new policy
-            if old_logits is not None:
-                kl_regularisation = torch.nn.functional.kl_div(
-                    lm1b_logsoftmax, old_logits, reduction="batchmean", log_target=True
-                )
-            else:
-                kl_regularisation = torch.Tensor([0])
-            old_logits = lm1b_logsoftmax.detach()
+            # remove the prompt from the output
+            lm1b_input = lm2_outputs.sequences[:, len(lm2_input["input_ids"][0]):] # check if this is correct dimension
+            lm1b_logits, lm1b_tokens = generate(model, lm1b_input, 3)
             # total loss = crossent loss + policy loss
             crossent_loss = (
                 torch.nn.functional.cross_entropy(
@@ -113,50 +88,60 @@ def train(model, dataloader, optimizer, tokenizer, device):
                 )
                 * answers.attention_mask.flatten()
             ).mean()
-            loss = crossent_loss + policy_loss - kl_regularisation
-            print(tokenizer.batch_decode(lm1b_tokens))
+            policy_loss = ppo_loss(lm1b_logits, old_logits, answers.input_ids, answers.attention_mask)
+            loss = crossent_loss + policy_loss
+            if curious:
+                _question_logits = torch.nn.functional.one_hot(question.input_ids, num_classes=50257).to("cuda:1")
+                curiosity_loss = - curiosity.predict_train(_question_logits.to("cuda:1"), torch.cat(lm1_logits).to("cuda:1"), lm2_outputs.scores.to("cuda:1"))
+                loss += curiosity_loss.detach()
+            # set the old logits for the next iteration of kl regularisation in ppo_loss
+            old_logits = lm1b_logsoftmax.detach()
             # backward pass
             loss.backward()
             # update the weights
             optimizer.step()
             # print the loss
-            accuracy = (lm1b_tokens == answers.input_ids).float().mean()
+            accuracy = ((lm1b_tokens == answers.input_ids) * answers.attention_mask).sum() / answers.attention_mask.sum()
             print(
                 "cross ent loss: ",
                 crossent_loss.item(),
                 "policy loss: ",
                 policy_loss.item(),
-                "reward: ",
-                R.item(),
+                # "reward: ",
+                # R.item(),
                 "kl ",
                 kl_regularisation.item(),
                 "acc ",
                 accuracy.item(),
             )
     # save the model
-    model.save_adapter("fine_tune", "./fine_tune")
+    model.save_adapter("./fine_tune", "fine_tune")
     print("DONE TRAINING : saved adapter")
 
 
 if __name__ == "__main__":
+    import sys
+
+    # Use the GPU if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = "cpu"
     print("Using device", device)
     # Load the model
-    model = AutoModelForCausalLM.from_pretrained("gpt2").to(device)
+    model = AutoModelForCausalLM.from_pretrained("gpt2")
     # Add a new adapter
     model.add_adapter("fine_tune")
     # Activate the adapter for training
     model.train_adapter("fine_tune")
+    model.to(device)
     # get the tokenizer, setup padding
     tokenizer = AutoTokenizer.from_pretrained("gpt2")
     tokenizer.padding_side = "left"
     tokenizer.add_special_tokens({"pad_token": tokenizer.eos_token})
     model.resize_token_embeddings(len(tokenizer))
     # Load the dataset
-    dataset = FruitDataset(".\data\mindless_dataset_randomized_train.txt")
+    dataset = FruitDataset("./data/mindless_dataset_randomized_train.txt")
     # Load the dataloader
-    dataloader = DataLoader(dataset, batch_size=25, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     # setup the optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     train(model, dataloader, optimizer, tokenizer, device)
