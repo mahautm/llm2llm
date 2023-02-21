@@ -12,7 +12,7 @@ class FruitDataset(Dataset):
 
     def __getitem__(self, item):
         return (
-            self.data[1][item],
-            self.data[0][item],
-            self.data[2][item],
+            self.data[1][item], # question
+            self.data[0][item], # context
+            self.data[2][item], # answer
         )
