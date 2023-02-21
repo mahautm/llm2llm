@@ -63,12 +63,12 @@ class LLMComEnv(gym.Env):
         Renders the environment. Calling once per epoch gives best display
         """
         if mode == "human" and self.turn == self.n_turns:
-            print("Prompt: " + self.logs["prompt"])
+            print("Prompt: " + self.logs["prompt"][0])
             print("LLM1 Response: " + self.logs["llm1_response"][0])
-            print("Context: " + self.logs["context"])
+            print("Context: " + self.logs["context"][0])
             print("LLM2 Response: " + self.logs["llm2_response"][-1])
             print("LLM1 Response: " + self.logs["llm1_response"][1])
-            print("Expected Answer: " + self.logs["answer"])
+            print("Expected Answer: " + self.logs["answer"][0])
         return self.logs
 
     def close(self):
