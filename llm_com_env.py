@@ -43,7 +43,7 @@ class LLMComEnv(gym.Env):
                 self.turn += 1
                 self.logs["llm1_response"].append(self.tokenizer.decode(self.response["input_ids"].squeeze()))
                 if self.turn == self.n_turns:
-                    reward = self.batch[2] in self.tokenizer.decode(self.response["input_ids"].squeeze()) # reward is 1 if the answer is correct
+                    reward = self.batch[2][0] in self.tokenizer.decode(self.response["input_ids"].squeeze()) # reward is 1 if the answer is correct
                     self.done = True
                 else:
                     # send the response to the llm and get a new prompt

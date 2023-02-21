@@ -24,12 +24,14 @@ def test_play(env, model, device="cuda"):
     # todo deal with device (through lamorel)
     obs = env.reset()
 
-    for i in range(30):
+    for i in range(100):
         logits = model.forward(**obs).logits
         action = torch.argmax(logits[:,-1:,:], dim=-1)
         obs, reward, done, info = env.step(action)
+        if done:
+            env.render() 
+            break
 
-    env.render() 
 
 def train(env):
     # use rl4lm nlpo to train
