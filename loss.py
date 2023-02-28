@@ -1,6 +1,46 @@
 import torch
+from baselines import MeanBaseline, NoBaseline
 
-def ppo_loss(logits, old_logits, expected_tokens, mask, beta=0.1):
+class PPOLoss:
+    # inspired from Roberto's image captioner implementation (EGG --> rll)
+    def __init__(self, baseline= "MeanBaseline", device="cuda"):
+        self.baseline = MeanBaseline() if baseline == "MeanBaseline" else NoBaseline()
+        self.device = device
+        self.old_logits = None
+
+    def __call__(self, reward, logits, kl_coeff=0.1, entropy_coeff=0.01):
+        # TODO : get the mask
+        # compute normalized log_probs of generated captions
+        logits = torch.nn.functional.log_softmax(logits, dim=-1)
+        # substract kl divergence between old and new policy
+        if False: #self.old_logits is not None: TODO:kl_div
+            kl_div = torch.nn.functional.kl_div(
+                logits, self.old_logits, reduction="batchmean", log_target=True
+            )
+        else:
+            kl_div = torch.tensor([0], device=self.device)
+        # save the logits for the next iteration
+        self.old_logits = logits.detach()
+        # compute avg per timestep entropy of captioner distribution
+        entropies = []
+        for timestep in range(logits.shape[1]):
+            dist = torch.distributions.Categorical(probs=logits[:, timestep].detach())
+            ent = dist.entropy().to(self.device) # * mask[:, timestep]
+            entropies.append(ent)
+        entropy = torch.stack(entropies, dim=1)
+        entropy = entropy.mean(1) # maybe if I batch it I'll need to .sum(-1) / logits.shape[1]
+
+        # update the baseline
+        baseline = self.baseline.predict(torch.tensor(reward))
+        weighted_kl_div = kl_div * kl_coeff
+        weighted_entropy = entropy * entropy_coeff
+        policy_loss = ((reward - baseline)* logits).mean()
+
+        optimized_loss = policy_loss - weighted_entropy + weighted_kl_div
+        return optimized_loss
+
+
+def legacy_ppo_loss(logits, old_logits, expected_tokens, mask, beta=0.1):
     # format the logits
     logits = torch.cat(logits)
     softmax = torch.nn.functional.softmax(logits)
