@@ -59,7 +59,7 @@ class LLMComEnvText(gym.Env):
             if self.turn == self.n_turns:
                 # reward could be adapted outside of env to match logits
                 # reward is 1 per correct answer
-                reward = (np.array(self.batch[2]) == np.array(action)).astype(int)
+                reward = (np.expand_dims(self.batch[2], axis=1) == np.array(action)).astype(int)
                 return [None]*len(action), reward, True, {"turn":self.turn}
 
             # send the response to the llm and get a new question
@@ -72,7 +72,7 @@ class LLMComEnvText(gym.Env):
             model_output = self.model.generate(_input, max_new_tokens=self.max_length, pad_token_id=50256)
             obs = [_mo[0]["text"] for _mo in model_output]
             self.logs["llm2_response"].append(obs)
-            return obs, 0, self.done, {"turn":self.turn}
+            return obs, np.array([0]*len(action)), self.done, {"turn":self.turn}
 
     def render(self, mode="human"):
         """

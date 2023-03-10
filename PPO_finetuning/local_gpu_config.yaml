@@ -22,12 +22,12 @@ lamorel_args:
 rl_script_args:
   path: /homedtcl/mmahaut/projects/lamorel/zoo/llm2llm/train.py
   dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/mindless_dataset_randomized_train.txt
-  epochs: 20
+  epochs: 500
   steps_per_epoch: 2
-  num_candidates:
-  batch_size: 50
+  num_candidates: 1
+  batch_size: 100
   max_new_tokens: 30
-  top_k: 10
+  top_k: 1
   ppo_epochs: 10
   lam: 0.99
   gamma: 0.99
@@ -36,10 +36,10 @@ rl_script_args:
   max_ep_len: 3
   lr: 1e-6
   entropy_coef: 0
-  value_loss_coef: 0
-  ce_coef: 0.1
-  clip_eps: 0.1
-  save_freq: 10
+  value_loss_coef: 0.3
+  ce_coef: 0
+  clip_eps: 0.3
+  save_freq: 100
   affixes:
   log_dir: /homedtcl/mmahaut/projects/llm2llm/fine_tune
   log_file: /homedtcl/mmahaut/projects/llm2llm/fine_tune/diaLogOPT.txt

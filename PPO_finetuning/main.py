@@ -50,7 +50,7 @@ class PPOUpdater(BaseUpdater):
 
         for i in tqdm(range(kwargs["ppo_epochs"]), ascii=" " * 9 + ">", ncols=100):
             # Use LLM to compute again action probabilities and value
-            output = self._llm_module(['__score', 'value'], contexts=[contexts], candidates=candidates, require_grad=True)
+            output = self._llm_module(['__score', 'value'], contexts=contexts, candidates=candidates, require_grad=True)
             scores = torch.stack([_o['__score'] for _o in output]).squeeze()
             # print("scores = ", scores)
             # probas = scores_to_proba_dists(scores)
@@ -139,8 +139,9 @@ def main(config_args):
         batch_actions = None
         for t in range(config_args.rl_script_args.steps_per_epoch):
             # Get actions
+            max_new_tokens = config_args.rl_script_args.max_new_tokens if infos["turn"] == 0 else 3
             _gen = lm_server.generate(tuple(o),
-                        max_new_tokens=config_args.rl_script_args.max_new_tokens,
+                        max_new_tokens=max_new_tokens,
                         pad_token_id=50256,
                     )
                     
@@ -162,7 +163,7 @@ def main(config_args):
             log_probs = torch.nn.functional.log_softmax(scores, dim=-1) # TODO : check dim
 
             new_o, r, d, infos = env.step(actions)
-            ep_ret += r
+            ep_ret += r.sum()
             ep_len += 1
 
             # save and log
@@ -187,7 +188,7 @@ def main(config_args):
                 buf.finish_path(values)              
                 if terminal:
                     n_episodes += 1
-                    print(f"Episode {n_episodes} --> Ret: {ep_ret.sum()} Len: {ep_len}")
+                    print(f"Episode {n_episodes} --> Acc: {ep_ret}/{len(o)} Reward: {torch.stack(ans).mean()}")
                 o, ep_ret, ep_len = env.reset(), 0, 0
                 # base_prompt = o[0]
 
@@ -209,7 +210,7 @@ def main(config_args):
                                             ce_coef=config_args.rl_script_args.ce_coef,
                                             ppo_epochs=config_args.rl_script_args.ppo_epochs,
                                             save_after_update=save_model,
-                                            output_dir=config_args.rl_script_args.log_dir)
+                                            log_dir=config_args.rl_script_args.log_dir)
         print(f"Update results: {update_results}")
     lm_server.close()
 

@@ -92,7 +92,7 @@ def sweep_params(opts):
                 opts.job_name,
                 job_path,
                 opts.partition,
-                n_gpus,
+                n_gpus + 1,
                 opts.time,
                 opts.memory,
                 opts.qos,

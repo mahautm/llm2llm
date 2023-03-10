@@ -1,23 +1,37 @@
 value_loss_coef:
-  - 0.1
-ce_coef:
-  - 0.1
-entropy_coef:
-  - 0.1
+  - 0.3
+clip_eps:
+  - 0.3
 affixes:
   -
     - 
-      - "O: "
-      - "Me: "
+      - "How many citrus does the other network Have? I don't know, I must ask it: How many citrus do you have ? "
+      - ""
     -
-      - "Me: "
-      - "O: "
-      - "Me: "
+      - ""
+      - ""
+      - ""
   -
     - 
-      - "Received: "
-      - "Send: "
+      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? "
+      - ""
     -
-      - "Received: "
-      - "Received: "
-      - "Send: "
+      - ""
+      - ""
+      - ""
+  -
+    - 
+      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? "
+      - " I don't know, I must ask it:"
+    -
+      - ""
+      - ""
+      - ""
+  -
+    - 
+      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? "
+      - " I don't know, I must ask it:"
+    -
+      - "I have eight fruit. How many fruit do you have ? I have eight fruit"
+      - ""
+      - " I have"
