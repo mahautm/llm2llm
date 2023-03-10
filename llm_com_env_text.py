@@ -59,15 +59,15 @@ class LLMComEnvText(gym.Env):
             if self.turn == self.n_turns:
                 # reward could be adapted outside of env to match logits
                 # reward is 1 per correct answer
-                reward = (np.array(self.batch[2]) == np.array(action)).sum()
+                reward = (np.array(self.batch[2]) == np.array(action)).astype(int)
                 return [None]*len(action), reward, True, {"turn":self.turn}
 
             # send the response to the llm and get a new question
             # combine the context and the action strings for each input, add suffix and prefix if needed
             if self.affix is None:
-                _input = [self.batch[1][i] + action[i] for i in range(len(action))]
+                _input = [self.batch[1][i] + action[i][0] for i in range(len(action))]
             else:
-                _input = [self.affix[1][0] + self.batch[1][i] + self.affix[1][1] + action[i] + self.affix[1][2] for i in range(len(action))]
+                _input = [self.affix[1][0] + self.batch[1][i] + self.affix[1][1] + action[i][0] + self.affix[1][2] for i in range(len(action))]
 
             model_output = self.model.generate(_input, max_new_tokens=self.max_length, pad_token_id=50256)
             obs = [_mo[0]["text"] for _mo in model_output]

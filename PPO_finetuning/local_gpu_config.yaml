@@ -15,7 +15,7 @@ lamorel_args:
     minibatch_size: 1
     parallelism:
       use_gpu: true
-      model_parallelism_size: 2
+      model_parallelism_size: 1
       synchronize_gpus_after_scoring: false
       empty_cuda_cache_after_scoring: false
   updater_args:
@@ -24,7 +24,7 @@ rl_script_args:
   dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/mindless_dataset_randomized_train.txt
   epochs: 20
   steps_per_epoch: 2
-  num_candidates: 3
+  num_candidates:
   batch_size: 50
   max_new_tokens: 30
   top_k: 10
@@ -35,7 +35,7 @@ rl_script_args:
   target_kl: 0.01
   max_ep_len: 3
   lr: 1e-6
-  entropy_coef: 0.01
+  entropy_coef: 0
   value_loss_coef: 0
   ce_coef: 0.1
   clip_eps: 0.1
