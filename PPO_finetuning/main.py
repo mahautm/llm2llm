@@ -162,8 +162,8 @@ def main(config_args):
                 log_probs.append(proba_dist.log_prob(a_idx))
                 a.append(actions[i][a_idx.cpu().item()])
 
-            new_o, r, d, infos = env.step(a)
-            ep_ret += r
+            new_o, r[i], d, infos = env.step(a)
+            ep_ret += sum(r)
             ep_len += 1
 
             # TODO : makefile if not exists
