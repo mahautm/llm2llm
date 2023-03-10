@@ -1,0 +1,12 @@
+value_loss_coef:
+  - 0.1
+  - 0.2
+  - 0.3
+ce_coef:
+  - 0.1
+  - 0.5
+  - 0.9
+entropy_coef:
+  - 0.1
+  - 0.2
+  - 0.3

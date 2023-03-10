@@ -3,9 +3,10 @@ import numpy as np
 
 
 class FruitDataset(Dataset):
-    def __init__(self, path):
+    def __init__(self, path,):
         # Grab the marco made text file and separate the different columns,
         self.data = np.loadtxt(path, dtype=str, delimiter="\t").T
+        
 
     def __len__(self):
         return len(self.data[0])

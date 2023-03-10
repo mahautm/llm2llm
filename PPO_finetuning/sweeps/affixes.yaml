@@ -1,0 +1,23 @@
+value_loss_coef:
+  - 0.1
+ce_coef:
+  - 0.1
+entropy_coef:
+  - 0.1
+affixes:
+  -
+    - 
+      - "O: "
+      - "Me: "
+    -
+      - "Me: "
+      - "O: "
+      - "Me: "
+  -
+    - 
+      - "Received: "
+      - "Send: "
+    -
+      - "Received: "
+      - "Received: "
+      - "Send: "
