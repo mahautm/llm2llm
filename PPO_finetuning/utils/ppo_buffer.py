@@ -20,7 +20,7 @@ class PPOBuffer:
         self.rew_buf = np.zeros(size, dtype=np.float32)
         self.ret_buf = np.zeros(size, dtype=np.float32)
         self.val_buf = np.zeros(size, dtype=np.float32)
-        self.logp_buf = np.zeros(size, dtype=np.float32)
+        self.logp_buf = [None for _ in range(size)] #np.zeros(size, dtype=np.float32)
         self.gamma, self.lam = gamma, lam
         self.ptr, self.path_start_idx, self.max_size = 0, 0, size
 
@@ -34,10 +34,23 @@ class PPOBuffer:
         self.val_buf[self.ptr] = val
         self.logp_buf[self.ptr] = logp
         self.ptr += 1
+    def finish_path(self, batch_size):
+        for i in range(batch_size):
+            path_slice = [self.path_start_idx + i + j*batch_size for j in range((self.ptr - self.path_start_idx)//batch_size)]
+            rews = self.rew_buf[path_slice]
+            vals = self.val_buf[path_slice]
 
-    def finish_path(self, last_vals):
+            # the next two lines implement GAE-Lambda advantage calculation
+            # deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
+            self.adv_buf[path_slice] = discount_cumsum(vals, self.gamma)
+
+            # the next line computes rewards-to-go, to be targets for the value function
+            self.ret_buf[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
+        self.path_start_idx = self.ptr
+
+
+    def legacy_finish_path(self, last_vals):
         """
-        # HERE we do not use this function : there should be no epoch cutoff
         Call this at the end of a trajectory, or when one gets cut off
         by an epoch ending. This looks back in the buffer to where the
         trajectory started, and uses rewards and value estimates from
@@ -49,6 +62,9 @@ class PPOBuffer:
         should be V(s_T), the value function estimated for the last state.
         This allows us to bootstrap the reward-to-go calculation to account
         for timesteps beyond the arbitrary episode horizon (or epoch cutoff).
+
+        (in this experiment there should be no epoch cutoffs)
+        Added padding for logp_buf
         """
         # last_vals size should be batch_size
         batch_size = len(last_vals)
@@ -64,6 +80,14 @@ class PPOBuffer:
             # the next line computes rewards-to-go, to be targets for the value function
             self.ret_buf[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
 
+            # check max_seq_len
+            # max_seq_len = max(max_seq_len, max([len(self.logp_buf[_idx]) for _idx in path_slice]))
+
+        # # padding logp_buf
+        # print('max_seq_len: ', max_seq_len)
+        # self.logp_buf = torch.stack([torch.nn.functional.pad(_lp, (0, 0, 0, max_seq_len - _lp.shape[0]), value=1) for _lp in self.logp_buf])
+        # print('logp_buf shape: ', self.logp_buf.shape)
+        
         self.path_start_idx = self.ptr
 
     def to_txt(self, filename):

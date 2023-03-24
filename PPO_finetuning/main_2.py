@@ -9,26 +9,39 @@ import numpy as np
 from tqdm import tqdm
 
 import gym
-
+import random
 from lamorel import Caller, lamorel_init
 from lamorel import BaseUpdater, BaseModuleFunction
+from utils.curiosity_modules import CuriosityModule
 
 lamorel_init()
 
-class ValueHeadModuleFn(BaseModuleFunction):
+class LogitsFn(BaseModuleFunction):
     def __init__(self, model_type):
         super().__init__()
         self._model_type = model_type
 
     def initialize(self):
-        llm_hidden_size = self.llm_config.to_dict()[self.llm_config.attribute_map['hidden_size']]
-        self.value_head_op = torch.nn.Sequential(
-            torch.nn.Linear(llm_hidden_size, 1024),
-            torch.nn.Sigmoid(),
-            torch.nn.Linear(1024, 1024),
-            torch.nn.Sigmoid(),
-            torch.nn.Linear(1024, 1),
-        ).to(self.device)
+        pass
+
+    def forward(self, forward_outputs, minibatch, tokenized_context, **kwargs):
+        if self._model_type == "causal":
+            # log softmax
+            # logits = self.log_soft(forward_outputs['logits'][:, len(tokenized_context["input_ids"]) - 1:-1, :])
+            # print("logits = ", logits.shape)
+            logits = forward_outputs["logits"][:, len(tokenized_context["input_ids"]) - 1:-1, :]
+        else:
+            logits = forward_outputs["logits"][:, :-1, :]  # skip </s> token appended by tokenizer
+
+        return logits.softmax(-1).cpu()
+
+class HiddenStatesFn(BaseModuleFunction):
+    def __init__(self, model_type):
+        super().__init__()
+        self._model_type = model_type
+
+    def initialize(self):
+        pass
 
     def forward(self, forward_outputs, minibatch, tokenized_context, **kwargs):
         if self._model_type == "causal":
@@ -36,55 +49,53 @@ class ValueHeadModuleFn(BaseModuleFunction):
         else:
             model_head = forward_outputs["decoder_hidden_states"][-1][:, 0, :]
 
-        value = self.value_head_op(model_head.to(self.device))
-        return value.cpu()
+        return model_head.cpu()
 
 class PPOUpdater(BaseUpdater):
     def perform_update(self, contexts, candidates, _current_batch_ids, **kwargs):
+        # TODO : get pad token
+        pad_token = 50256
+        max_new_tokens = 30
         if not hasattr(self, 'optimizer'):
             self.optimizer = torch.optim.Adam(self._llm_module.parameters(), kwargs["lr"])
 
         current_process_buffer = {}
-        for k in ['advantages', 'returns', 'logprobs']:
-            current_process_buffer[k] = kwargs[k][_current_batch_ids]
+        for k in ['advantages', 'returns', 'logprobs', 'answers']:
+            current_process_buffer[k] = kwargs[k][:]
 
         for i in tqdm(range(kwargs["ppo_epochs"]), ascii=" " * 9 + ">", ncols=100):
             # Use LLM to compute again action probabilities and value
-            output = self._llm_module(['__score', 'value'], contexts=contexts, candidates=candidates, require_grad=True)
-            scores = torch.stack([_o['__score'] for _o in output]).squeeze()
-            # print("scores = ", scores)
-            # probas = scores_to_proba_dists(scores)
-            values = torch.stack([_o["value"][0] for _o in output])
+            with torch.no_grad():
+                candidates = self._llm_module.module.generate(tuple(contexts), max_new_tokens=max_new_tokens,
+                            pad_token_id=pad_token)
+                candidates = [[_c[0]["text"]] for _c in candidates]
+            output = self._llm_module(['word_logits'], contexts=contexts, candidates=candidates, require_grad=True)
+            log_probs = torch.stack([_o['word_logits'][0].mean(-2) for _o in output])
+            # prevent small values to become nan
+            # log_probs = torch.clamp(log_probs, -1e-10, 1000)
 
-            # Compute policy loss
+            entropy = scores_to_proba_dists(log_probs).entropy()
+            ratio = torch.exp(log_probs - torch.stack(current_process_buffer['logprobs']))
+            clip_adv = torch.clamp(ratio, 1 - kwargs["clip_eps"], 1 + kwargs["clip_eps"]).T * current_process_buffer['advantages']
 
-            entropy = scores_to_proba_dists(scores).entropy()
+            policy_loss = -(torch.min(ratio.T * (current_process_buffer['advantages'] + current_process_buffer['returns']), clip_adv)).mean()
 
-            # what comes out as score is already a log_softmax
-            # log_prob = torch.nn.functional.log_softmax(scores, dim=-1)
-            # if len(log_prob.shape) > 1:
-            #     log_prob = log_prob.sum(dim=-1)
-            ratio = torch.exp(scores - current_process_buffer['logprobs'])
-            clip_adv = torch.clamp(ratio, 1 - kwargs["clip_eps"], 1 + kwargs["clip_eps"]) * current_process_buffer['advantages']
-            policy_loss = -(torch.min(ratio * current_process_buffer['advantages'], clip_adv)).mean()
-
-            # Compute value loss
-            value_loss = ((values - current_process_buffer['returns']) ** 2).mean()
-
+            
             # Add cross entropy loss (only for final turns)
-            # _ce_mask = (current_process_buffer['answers'] != -1)
-            # _ce_scores = scores[_ce_mask]
-            # _ce_answers = current_process_buffer['answers'][_ce_mask].squeeze() 
-            # ce_loss = torch.nn.functional.cross_entropy(_ce_scores, _ce_answers.type(torch.LongTensor))
+            _ce_answers = []
+            for _t in current_process_buffer['answers']:
+                _ce_answers.append(self._llm_module.module._LLM_tokenizer(_t))
+            _ce_tokens = torch.tensor([_ce["input_ids"] for _ce in _ce_answers])
+            ce_loss = torch.nn.functional.cross_entropy(log_probs[len(log_probs)//2:], _ce_tokens)
 
             # Compute final loss
-            # print("policy_loss = ", policy_loss, "entropy = ", entropy, "value_loss = ", value_loss, "ce_loss = ", ce_loss)
-            loss = policy_loss - kwargs["entropy_coef"] * entropy + kwargs["value_loss_coef"] * value_loss #+ kwargs["ce_coef"] * ce_loss
+            loss = (policy_loss - kwargs["entropy_coef"] * entropy).mean()  #+ kwargs["ce_coef"] * ce_loss
 
             # Optimize
             self.optimizer.zero_grad()
-            loss.backward()
+            loss.mean().backward()
             self.optimizer.step()
+
 
         if kwargs["save_after_update"]:
             print("Saving model...")
@@ -99,12 +110,18 @@ def main(config_args):
     seed = 42
     torch.manual_seed(seed)
     np.random.seed(seed)
+    random.seed(seed)
+    pad_token = 50256 # TODO : get pad token
+    hidden_size = 768
+
 
     # Create LLM agent
     lm_server = Caller(config_args.lamorel_args,
                        custom_updater_class=PPOUpdater,
                        custom_module_functions={
-                            'value': ValueHeadModuleFn(config_args.lamorel_args.llm_args.model_type)
+                            # 'value': ValueHeadModuleFn(config_args.lamorel_args.llm_args.model_type),
+                            'word_logits': LogitsFn(config_args.lamorel_args.llm_args.model_type),
+                            'hidden_states': HiddenStatesFn(config_args.lamorel_args.llm_args.model_type),
                         }
                 )
     
@@ -126,6 +143,9 @@ def main(config_args):
     o, ep_ret, ep_len = env.reset(), 0, 0
     infos = {"turn": 0}
 
+    # Setting up curiosity module
+    c_module = CuriosityModule(hidden_size, device="cpu")
+
     # Main loop: collect experience in env and update/log each epoch
     n_episodes = 0
     for epoch in range(config_args.rl_script_args.epochs):
@@ -134,12 +154,12 @@ def main(config_args):
             # Get actions
             max_new_tokens = config_args.rl_script_args.max_new_tokens if infos["turn"] == 0 else 1
             _gen = lm_server.generate(tuple(o),
-                        max_new_tokens=max_new_tokens,
-                        pad_token_id=50256,
+                        max_new_tokens=max_new_tokens if infos["turn"] == 0 else 1,
+                        pad_token_id=pad_token,
                     )
                     
             actions = [[a[0]["text"]] for a in _gen]
-            scores = torch.stack([torch.tensor(a[0]["score"]) for a in _gen]).squeeze()
+            # scores = [a[0]["score"] for a in _gen]
             if batch_actions is None:
                 batch_actions = actions
             else:
@@ -150,15 +170,34 @@ def main(config_args):
                 ans = lm_server.score(contexts=o, candidates=np.expand_dims(env.batch[2], axis=1))
             else:
                 ans = [0] * len(actions)
-            # output = lm_server.score(contexts=o, candidates=actions,
-            #                          additional_module_function_keys=['value'])
+            # print(o)
+            hs_o = lm_server.score(contexts=o, candidates=tuple([" "]*len(o)), additional_module_function_keys=['hidden_states'])
+            # here maybe generate removes the need for context
+            hs_o = torch.stack([h['hidden_states'] for h in hs_o])
+            output = lm_server.score(contexts=o, candidates=actions,
+                                     additional_module_function_keys=['word_logits', 'hidden_states'])
+            hs_a = torch.stack([h['hidden_states'] for h in output])
 
-            # scores = torch.stack([_o['__score'] for _o in output]).squeeze()
-            # log_probs = scores # torch.nn.functional.log_softmax(scores, dim=-1) # TODO : check dim
+
+            # get max length of output['word_logits']
+            # max_len = max([_o['word_logits'].shape[1] for _o in output]) > max_len
+            # pad with one_hot of pad_token and get mask
+            # one_hot_eos = torch.nn.functional.one_hot(torch.tensor(pad_token), num_classes=output[0]['word_logits'].shape[-1])
+            # print(output[0]['word_logits'].shape)
+            # log_probs = torch.stack([torch.nn.functional.pad(_o['word_logits'], (0, 0, 0, max_len - _o['word_logits'].shape[1]), value=0) for _o in output])
 
             new_o, r, d, infos = env.step(actions)
             ep_ret += r.sum()
             ep_len += 1
+            if new_o[0] is not None:
+                hs_new_o = lm_server.score(contexts=new_o, candidates=tuple([" "]*len(new_o)), additional_module_function_keys=['hidden_states'])
+                hs_new_o = torch.stack([h['hidden_states'] for h in hs_new_o])
+                # calculate curiosity reward
+                c_rew = c_module(hs_o, hs_new_o, hs_a).detach().numpy()
+                # update curiosity
+                c_module.update()
+            else:
+                c_rew = np.array([0] * len(actions))
 
             # save and log
             with open(config_args.rl_script_args.log_file, "a") as f:
@@ -166,13 +205,8 @@ def main(config_args):
                     f.write(f"{k} : {v}\n")
 
             # Store experience to replay buffer
-            _vals = []
-            print(scores)
             for i, obs in enumerate(o):
-                _val = 0#output[i]["value"][0]
-                _vals.append(_val)
-                buf.store(obs, ans[i], _val, scores[i])
-            values = _vals #torch.stack(_vals)
+                buf.store(obs, ans[i], c_rew[i], output[i]["word_logits"][0].mean(dim=-2))
 
             o = new_o
             timeout = ep_len == config_args.rl_script_args.max_ep_len
@@ -180,11 +214,12 @@ def main(config_args):
             epoch_ended = t == config_args.rl_script_args.steps_per_epoch - 1
 
             if terminal or epoch_ended:  
-                buf.finish_path(values)              
+                buf.finish_path(len(o))              
                 if terminal:
                     n_episodes += 1
                     print(f"Episode {n_episodes} --> Acc: {ep_ret}/{len(o)} Reward: {torch.stack(ans).mean()}")
                 o, ep_ret, ep_len = env.reset(), 0, 0
+                infos = {"turn": 0}
                 # base_prompt = o[0]
 
         # Perform PPO update!
@@ -192,12 +227,14 @@ def main(config_args):
                       epoch == config_args.rl_script_args.epochs - 1) and epoch != 0
         # buf.to_txt(config_args.rl_script_args.log_dir + "/buffer.txt")
         collected_trajectories = buf.get()
+        print(batch_actions)
         update_results = lm_server.update(collected_trajectories['obs'],
                                             # [_a for _a_list in batch_actions for _a in _a_list],
                                             batch_actions,
                                             returns=collected_trajectories['ret'],
                                             advantages=collected_trajectories['adv'],
                                             logprobs=collected_trajectories['logp'],
+                                            answers=env.batch[2],
                                             lr=config_args.rl_script_args.lr,
                                             clip_eps=config_args.rl_script_args.clip_eps,
                                             entropy_coef=config_args.rl_script_args.entropy_coef,
@@ -210,4 +247,5 @@ def main(config_args):
     lm_server.close()
 
 if __name__ == '__main__':
+    # test_lamorel_llmEnv()
     main()

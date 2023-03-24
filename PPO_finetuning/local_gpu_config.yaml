@@ -5,7 +5,7 @@ lamorel_args:
     n_rl_processes: 1
     n_llm_processes: 1
   accelerate_args:
-    config_file: /homedtcl/mmahaut/projects/lamorel/zoo/llm2llm/configs/accelerate/default_config.yaml
+    config_file: /homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/default_accelerate.yaml
     machine_rank: 0
     num_machines: 1
   llm_args:
@@ -25,9 +25,9 @@ rl_script_args:
   epochs: 500
   steps_per_epoch: 2
   num_candidates: 1
-  batch_size: 100
+  batch_size: 10
   max_new_tokens: 30
-  top_k: 1
+  top_k: 10
   ppo_epochs: 10
   lam: 0.99
   gamma: 0.99
@@ -35,11 +35,18 @@ rl_script_args:
   target_kl: 0.01
   max_ep_len: 3
   lr: 1e-6
-  entropy_coef: 0
-  value_loss_coef: 0.3
-  ce_coef: 0
-  clip_eps: 0.3
-  save_freq: 100
+  entropy_coef: 0.1
+  value_loss_coef: 0.1
+  ce_coef: 0.1
+  clip_eps: 0.1
+  save_freq: 10
   affixes:
+    - 
+      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? I have six. six"
+      - ""
+    -
+      - ""
+      - ""
+      - ""
   log_dir: /homedtcl/mmahaut/projects/llm2llm/fine_tune
   log_file: /homedtcl/mmahaut/projects/llm2llm/fine_tune/diaLogOPT.txt
