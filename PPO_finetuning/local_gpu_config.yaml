@@ -5,17 +5,17 @@ lamorel_args:
     n_rl_processes: 1
     n_llm_processes: 1
   accelerate_args:
-    config_file: /homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/default_accelerate.yaml
+    config_file: /homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/accelerate/default_accelerate.yaml
     machine_rank: 0
     num_machines: 1
   llm_args:
     model_type: causal
-    model_path: gpt2
+    model_path: facebook/opt-6.7b
     pretrained: true
     minibatch_size: 1
     parallelism:
       use_gpu: true
-      model_parallelism_size: 1
+      model_parallelism_size: 5
       synchronize_gpus_after_scoring: false
       empty_cuda_cache_after_scoring: false
   updater_args:
@@ -36,13 +36,14 @@ rl_script_args:
   max_ep_len: 3
   lr: 1e-6
   entropy_coef: 0.1
-  value_loss_coef: 0.1
+  cur_coef: 0.1
+  cur2_coef: 0.5
   ce_coef: 0.1
   clip_eps: 0.1
   save_freq: 10
   affixes:
     - 
-      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? I have six. six"
+      - "How many fruit does the other network have? I don't know, I must ask it: How many fruit do you have?\n"
       - ""
     -
       - ""

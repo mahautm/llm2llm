@@ -1,0 +1,28 @@
+cur_coef:
+  - 1
+  - 10
+  - 100
+clip_eps:
+  - 0.1
+  - 0.2
+  - 0.3
+entropy_coef:
+  - 0
+  - 0.1
+  - 1e-2
+ce_coef:
+  - 0
+  - 0.1
+  - 1e-2
+lr:
+  - 1e-6
+  - 1e-5
+affixes:
+  -
+    - 
+      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? I have\nHow many vegetables does the other network Have? I don't know, I must ask it: How many vegetables do you have ? I have"
+      - ""
+    -
+      - ""
+      - ""
+      - ""

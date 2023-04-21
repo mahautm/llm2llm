@@ -18,6 +18,12 @@ def get_opts(arguments):
         help="path to the yaml file containing the parameters to sweep through",
     )
     arg_parser.add_argument(
+        "--script_path",
+        type=str,
+        default="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/main_2.py",
+        help="path to the yaml file containing the parameters to sweep through",
+    )
+    arg_parser.add_argument(
         "--log_path",
         type=str,
         default="/homedtcl/mmahaut/projects/llm2llm/experiments",
@@ -32,7 +38,7 @@ def get_opts(arguments):
     arg_parser.add_argument(
         "--memory",
         type=str,
-        default="200G",
+        default="500G",
         help="assigned memory in GB",
     )
     arg_parser.add_argument(
@@ -69,7 +75,7 @@ def get_opts(arguments):
     arg_parser.add_argument(
         "--acc_config_path",
         type=str,
-        default="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/default_accelerate.yaml",
+        default="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/accelerate/default_accelerate.yaml",
         help="path to the accelerate config file",
     )
 
@@ -86,13 +92,16 @@ def sweep_params(opts):
         for i, values in enumerate(it.product(*(params[key] for key in params))):
             job_path = log_path / str(i)
             job_path.mkdir(parents=True, exist_ok=True)
-            n_gpus = build_yaml(params.keys(), values, opts.default_params_path, job_path)
+            n_gpus = build_yaml(
+                params.keys(), values, opts.default_params_path, job_path
+            )
             sbatch_file = write_sbatch(
                 i,
                 opts.job_name,
                 job_path,
+                opts.script_path,
                 opts.partition,
-                n_gpus + 1,
+                n_gpus,
                 opts.time,
                 opts.memory,
                 opts.qos,
@@ -102,12 +111,14 @@ def sweep_params(opts):
             _return = os.system(f"sbatch {sbatch_file}")
     os.system(f"cp {opts.params_path} {log_path / 'params.yaml'}")
 
+
 def adjust_port_number(acc_config_path, log_path, job_idx):
     with open(acc_config_path, "r") as f:
         acc_config = yaml.safe_load(f)
     acc_config["main_process_port"] = 6000 + job_idx
     with open(log_path / "accelerate_config.yaml", "w") as f:
         yaml.dump(acc_config, f)
+
 
 def build_yaml(keys, values, default_path, log_path):
     """
@@ -123,7 +134,9 @@ def build_yaml(keys, values, default_path, log_path):
         default["rl_script_args"][key] = values[i]
     default["rl_script_args"]["log_dir"] = str(log_path)
     default["rl_script_args"]["log_file"] = str(log_path / f"log.txt")
-    default["lamorel_args"]["accelerate_args"]["config_file"] = str(log_path / "accelerate_config.yaml")
+    default["lamorel_args"]["accelerate_args"]["config_file"] = str(
+        log_path / "accelerate_config.yaml"
+    )
     # write the new yaml file
     with open(log_path / f"config.yaml", "w") as f:
         yaml.dump(default, f)
@@ -131,12 +144,11 @@ def build_yaml(keys, values, default_path, log_path):
     return default["lamorel_args"]["llm_args"]["parallelism"]["model_parallelism_size"]
 
 
-
-
 def write_sbatch(
     job_idx,
     jobname,
     log_path: Path,
+    script_path,
     partition,
     n_gpus,
     time,
@@ -165,8 +177,10 @@ def write_sbatch(
 
 source /homedtic/mmahaut/.bashrc
 conda activate llm2llm
+module load CUDA/11.4.3
 
-python -m lamorel_launcher.launch --config-path {log_path} --config-name config rl_script_args.path=/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/main.py
+# python -m lamorel_launcher.launch --config-path {log_path} --config-name config rl_script_args.path={script_path}
+NCCL_P2P_DISABLE='1' PATH=$PATH NCCL_IB_DISABLE='1' accelerate launch --config_file={log_path / 'accelerate_config.yaml'} /homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/hf_acc_launch.py --config-path={log_path} --config-name='config'
 echo "done"
 """
         )

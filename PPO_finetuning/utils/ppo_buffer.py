@@ -1,11 +1,12 @@
-'''
+"""
 PPO implementation taken from https://github.com/openai/spinningup
-'''
+"""
 
 import numpy as np
 import torch
 
 from . import discount_cumsum, combined_shape
+
 
 class PPOBuffer:
     """
@@ -20,7 +21,7 @@ class PPOBuffer:
         self.rew_buf = np.zeros(size, dtype=np.float32)
         self.ret_buf = np.zeros(size, dtype=np.float32)
         self.val_buf = np.zeros(size, dtype=np.float32)
-        self.logp_buf = [None for _ in range(size)] #np.zeros(size, dtype=np.float32)
+        self.logp_buf = [None for _ in range(size)]  # np.zeros(size, dtype=np.float32)
         self.gamma, self.lam = gamma, lam
         self.ptr, self.path_start_idx, self.max_size = 0, 0, size
 
@@ -34,9 +35,13 @@ class PPOBuffer:
         self.val_buf[self.ptr] = val
         self.logp_buf[self.ptr] = logp
         self.ptr += 1
+
     def finish_path(self, batch_size):
         for i in range(batch_size):
-            path_slice = [self.path_start_idx + i + j*batch_size for j in range((self.ptr - self.path_start_idx)//batch_size)]
+            path_slice = [
+                self.path_start_idx + i + j * batch_size
+                for j in range((self.ptr - self.path_start_idx) // batch_size)
+            ]
             rews = self.rew_buf[path_slice]
             vals = self.val_buf[path_slice]
 
@@ -47,7 +52,6 @@ class PPOBuffer:
             # the next line computes rewards-to-go, to be targets for the value function
             self.ret_buf[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
         self.path_start_idx = self.ptr
-
 
     def legacy_finish_path(self, last_vals):
         """
@@ -69,7 +73,10 @@ class PPOBuffer:
         # last_vals size should be batch_size
         batch_size = len(last_vals)
         for i in range(batch_size):
-            path_slice = [self.path_start_idx + i + j*batch_size for j in range((self.ptr - self.path_start_idx)//batch_size)]
+            path_slice = [
+                self.path_start_idx + i + j * batch_size
+                for j in range((self.ptr - self.path_start_idx) // batch_size)
+            ]
             rews = np.append(self.rew_buf[path_slice], last_vals[i])
             vals = np.append(self.val_buf[path_slice], last_vals[i])
 
@@ -87,7 +94,7 @@ class PPOBuffer:
         # print('max_seq_len: ', max_seq_len)
         # self.logp_buf = torch.stack([torch.nn.functional.pad(_lp, (0, 0, 0, max_seq_len - _lp.shape[0]), value=1) for _lp in self.logp_buf])
         # print('logp_buf shape: ', self.logp_buf.shape)
-        
+
         self.path_start_idx = self.ptr
 
     def to_txt(self, filename):
@@ -95,16 +102,16 @@ class PPOBuffer:
         Adds the buffer to a text file.
         """
         data = {
-            'obs': self.obs_buf,
-            'rew': self.rew_buf,
-            'val': self.val_buf,
-            'ret': self.ret_buf,
-            'adv': self.adv_buf,
-            'logp': self.logp_buf,
+            "obs": self.obs_buf,
+            "rew": self.rew_buf,
+            "val": self.val_buf,
+            "ret": self.ret_buf,
+            "adv": self.adv_buf,
+            "logp": self.logp_buf,
         }
-        with open(filename, 'a') as f:
+        with open(filename, "a") as f:
             for k, v in data.items():
-                f.write(f'{k}: {v}\n')
+                f.write(f"{k}: {v}\n")
 
     def get(self):
         """
@@ -116,11 +123,13 @@ class PPOBuffer:
         self.ptr, self.path_start_idx = 0, 0
         # the next two lines implement the advantage normalization trick
         adv_mean, adv_std = np.mean(self.adv_buf), np.std(self.adv_buf)
-        self.adv_buf = (self.adv_buf - adv_mean) / adv_std
-        data = dict(obs=self.obs_buf, ret=self.ret_buf,
-                    adv=self.adv_buf, logp=self.logp_buf)
+        self.adv_buf = (
+            (self.adv_buf - adv_mean) / adv_std if adv_std != 0 else self.adv_buf
+        )
+        data = dict(
+            obs=self.obs_buf, ret=self.ret_buf, adv=self.adv_buf, logp=self.logp_buf
+        )
         return {
-            k: torch.as_tensor(v, dtype=torch.float32)
-            if not isinstance(v, list) else v
+            k: torch.as_tensor(v, dtype=torch.float32) if not isinstance(v, list) else v
             for k, v in data.items()
         }

@@ -1,11 +1,18 @@
 value_loss_coef:
-  - 0.3
+  - 0.1
 clip_eps:
-  - 0.3
+  - 0.1
+ce_coef:
+  - 0
+cur2_coef: 
+  - 1
+  - 0.5
+  - 0
+
 affixes:
   -
     - 
-      - "How many citrus does the other network Have? I don't know, I must ask it: How many citrus do you have ? "
+      - "How many kittens does the other network have? I don't know, I must ask it: How many kittens do you have?\n "
       - ""
     -
       - ""
@@ -13,25 +20,9 @@ affixes:
       - ""
   -
     - 
-      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? "
-      - ""
+      - "You are in discussion with another agent that has a number of items. You are given a goal telling you which item you want to know about. You must ask questions and then complete your goal. An example goal could be: 'How many cardamon does the other network have?'. You would ask: 'I don't know, I must ask it: How many cardamon do you have?\n'. If the agent then tells you that it has 8 cardamon, you would answer: 'eight'.\n Goal:"
+      - "You:"
     -
       - ""
-      - ""
-      - ""
-  -
-    - 
-      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? "
-      - " I don't know, I must ask it:"
-    -
-      - ""
-      - ""
-      - ""
-  -
-    - 
-      - "How many fruit does the other network Have? I don't know, I must ask it: How many fruit do you have ? "
-      - " I don't know, I must ask it:"
-    -
-      - "I have eight fruit. How many fruit do you have ? I have eight fruit"
-      - ""
-      - " I have"
+      - "Agent:"
+      - "You:"

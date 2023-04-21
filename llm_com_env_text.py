@@ -8,9 +8,14 @@ import numpy as np
 # pad for llm
 
 from torch.nn.utils.rnn import pad_sequence
+
+
 class LLMComEnvText(gym.Env):
     """Environment where the agent communicates with a frozen language model. Input and output are text to accomodate lamorel"""
-    def __init__(self, model, dataset_path, max_length=10, batch_size=1, n_turns=2, affix=None):
+
+    def __init__(
+        self, model, dataset_path, max_length=10, batch_size=1, n_turns=2, affix=None
+    ):
         super().__init__()
         # non-trained model
         self.model = model
@@ -21,7 +26,7 @@ class LLMComEnvText(gym.Env):
         self.dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         self.data = None
         # additional params
-        self.max_length = max_length # max length of the response
+        self.max_length = max_length  # max length of the response
         self.n_turns = n_turns
 
     def reset(self, allow_rewind=True):
@@ -35,14 +40,22 @@ class LLMComEnvText(gym.Env):
                 self.data = iter(self.dataloader)
                 self.batch = next(self.data)
             else:
-                raise RuntimeError("Dataloader has been exhausted, call rewind_dataloader() or set allow_rewind to True to start a new episode from the same data.")
-        
-        self.logs = {"question" : self.batch[0], "context" : self.batch[1], "answer" : self.batch[2], "llm1_response": [], "llm2_response": []}
+                raise RuntimeError(
+                    "Dataloader has been exhausted, call rewind_dataloader() or set allow_rewind to True to start a new episode from the same data."
+                )
+
+        self.logs = {
+            "question": self.batch[0],
+            "context": self.batch[1],
+            "answer": self.batch[2],
+            "llm1_response": [],
+            "llm2_response": [],
+        }
         self.turn = 0
-        self.done = False  
+        self.done = False
 
         if self.affix is None:
-           return self.batch[0]  # question
+            return self.batch[0]  # question
         else:
             return [self.affix[0][0] + b + self.affix[0][1] for b in self.batch[0]]
 
@@ -53,26 +66,40 @@ class LLMComEnvText(gym.Env):
         if self.done:
             raise RuntimeError("Episode is done, call reset() to start a new episode.")
         else:
-            assert len(action) == len(self.batch[0]), "Action must be a list of strings of length equal to the batch size."
+            assert len(action) == len(
+                self.batch[0]
+            ), "Action must be a list of strings of length equal to the batch size."
             self.turn += 1
             self.logs["llm1_response"].append(action)
             if self.turn == self.n_turns:
                 # reward could be adapted outside of env to match logits
                 # reward is 1 per correct answer
-                reward = (np.expand_dims(self.batch[2], axis=1) == np.array(action)).astype(int)
-                return [None]*len(action), reward, True, {"turn":self.turn}
+                reward = [
+                    int(self.batch[2][i] in np.array(action)[i])
+                    for i in range(len(action))
+                ]
+                return [None] * len(action), reward, True, {"turn": self.turn}
 
             # send the response to the llm and get a new question
             # combine the context and the action strings for each input, add suffix and prefix if needed
             if self.affix is None:
-                _input = [self.batch[1][i] + action[i][0] for i in range(len(action))]
+                _input = [self.batch[1][i] + action[i] for i in range(len(action))]
             else:
-                _input = [self.affix[1][0] + self.batch[1][i] + self.affix[1][1] + action[i][0] + self.affix[1][2] for i in range(len(action))]
+                _input = [
+                    self.affix[1][0]
+                    + self.batch[1][i]
+                    + self.affix[1][1]
+                    + action[i]
+                    + self.affix[1][2]
+                    for i in range(len(action))
+                ]
+            # print(_input)
 
-            model_output = self.model.generate(_input, max_new_tokens=self.max_length, pad_token_id=50256)
-            obs = [_mo[0]["text"] for _mo in model_output]
+            model_output = self.model.generate(_input, max_new_tokens=self.max_length)
+            obs = model_output["text"]  # non - lamorel version
+            # obs = [_mo[0]["text"] for _mo in model_output]  # <- legacy lamorel version
             self.logs["llm2_response"].append(obs)
-            return obs, np.array([0]*len(action)), self.done, {"turn":self.turn}
+            return obs, np.array([0] * len(action)), self.done, {"turn": self.turn}
 
     def render(self, mode="human"):
         """

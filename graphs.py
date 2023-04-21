@@ -6,11 +6,13 @@ import seaborn as sns
 import yaml
 import itertools as it
 from pathlib import Path
+import re
 
 def extract_exp_data(
     exp_name=None,
     exp_path="/homedtcl/mmahaut/projects/llm2llm/experiments",
     config_name="params.yaml",
+    metric="reward"
     ):
     # get config file
     exp_path = Path(exp_path) / exp_name if exp_name else exp_path
@@ -24,45 +26,46 @@ def extract_exp_data(
         _dir = exp_path / f
         if _dir.is_dir():
             # get the log file ending in out
-            log_path = [ _dir / _f for _f in os.listdir(_dir) if _f.endswith(".out")][0] 
-            # extract data from log file and append to exp_data as dataframes
-            exp_data.append(pd.DataFrame(extract_log_data(log_path)))
-            # add the params to the dataframe
-            _vals = values[int(f)]
-            for i, k in enumerate(params):
-                if k != "affixes":
-                    exp_data[-1][k] = _vals[i]
-                else:
-                    exp_data[-1][k] = _vals[i][0][0][0]
+            detected_files = [ _dir / _f for _f in os.listdir(_dir) if _f.endswith(".out")]
+            if len(detected_files) > 0:
+                log_path = detected_files[0] 
+                # extract data from log file and append to exp_data as dataframes
+                exp_data.append(pd.DataFrame(extract_log_data(log_path, metric)))
+                # add the params to the dataframe
+                _vals = values[int(f)]
+                for i, k in enumerate(params):
+                    if k != "affixes":
+                        exp_data[-1][k] = _vals[i]
+                    else:
+                        exp_data[-1][k] = _vals[i][0][0][0]
     return exp_data
 
-def extract_log_data(log_path):
+def extract_log_data(log_path, metric):
     log_data = {}
     # open log file
     with open(log_path, "r") as f:
         # check each line for the keyword
         for line in f:
             # add the data to the dict
-            data = extract_data_from_line(line)
+            data = extract_data_from_line(line, metric)
             if data:
-                for k,v in extract_data_from_line(line).items():
+                for k,v in extract_data_from_line(line,metric).items():
                     # check if the key is in the dict
                     if k not in log_data:
                         log_data[k] = []
                     log_data[k].append(v)
     return log_data
 
-def extract_data_from_line(line):
+def extract_data_from_line(line, metric):
     # format : Episode 2 --> Acc: 0/100 Reward: 6.030714985172381e-07
-    if "Reward" in line and "Acc" in line:
-        # extract the reward
-        reward = float(line.split("Reward: ")[1].split(" ")[0])
-        # extract the accuracy
-        acc = float(line.split("Acc: ")[1].split("/")[0])
-        # extract accuracy numerator
-        acc_num = float(line.split("Acc: ")[1].split("/")[1].split(" ")[0])
-        # return as a dict
-        return {"reward": reward, "acc": acc/acc_num}
+    if metric in line:
+        # extract the first float folowing the metric
+        _m = re.search(f"{metric}:\s+([-+]?\d+\.\d+[eE]?[+\-]?\d*)", line)
+        if _m is None:
+            _m = re.search(f"{metric} =\s+([-+]?\d+\.\d+[eE]?[+\-]?\d*)", line)
+        if _m is None:
+            raise ValueError(f"Could not extract {metric} from line {line}")
+        return {metric: float(_m.group(1))}
 
 
 def plot_data(data, metric="reward", save_path=None, visualize=False, title=None, hue=None):
@@ -98,6 +101,6 @@ def plot_data_from_exp(
     if save_path is None and visualize is False:
         save_path = f"{exp_path}/{exp_name}/{metric}.png"
     # extract data
-    data = extract_exp_data(exp_name, exp_path, config_name)
+    data = extract_exp_data(exp_name, exp_path, config_name, metric)
     # plot the data
     plot_data(data, metric, save_path, visualize, hue=hue)
