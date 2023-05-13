@@ -115,7 +115,7 @@ class StrToStrWrapper(torch.nn.Module):
             # do it for every word?
             if not hasattr(self, "out_hs"):
                 self.out_hs = self.get_out_hs(output["hidden_states"])
-            result["value"] = self.critic(torch.stack(self.out_hs))
+            result["value"] = self.critic(self.out_hs)
         if self.curiosity_module is not None:
             if not hasattr(self, "out_hs"):
                 self.out_hs = self.get_out_hs(output["hidden_states"])

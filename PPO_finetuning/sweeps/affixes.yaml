@@ -22,7 +22,7 @@ lr_warmup_steps:
   - 5
 lora_r: 
   - 4
-cohere_env:
+cohere_key:
   - false
 affixes:
   -

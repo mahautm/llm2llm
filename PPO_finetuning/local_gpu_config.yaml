@@ -45,7 +45,7 @@ rl_script_args:
   value_loss_coef: 0.1
   clip_eps: 0.1
   save_freq: 100
-  cohere_env: false
+  cohere_key: false
   affixes:
     - 
       - "How many fruit does the other network have? I don't know, I must ask it: How many fruit do you have?\n"
