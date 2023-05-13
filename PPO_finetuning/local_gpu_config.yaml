@@ -24,23 +24,28 @@ rl_script_args:
   dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/mindless_dataset_randomized_train.txt
   epochs: 500
   steps_per_epoch: 2
-  num_candidates: 1
   batch_size: 10
   max_new_tokens: 30
-  top_k: 10
-  ppo_epochs: 10
+  ppo_epochs: 2
   lam: 0.99
   gamma: 0.99
   clip_ration: 0.2
   target_kl: 0.01
   max_ep_len: 3
-  lr: 1e-6
-  entropy_coef: 0.1
+  lr: 1e-8
+  lr_warmup_steps: 500
+  lr_warmup_max: 0.001
+  lr_warmup_min: 0
+  lora_r: 8
+  score_coef: 0.1
   cur_coef: 0.1
   cur2_coef: 0.5
   ce_coef: 0.1
+  entropy_loss_coef: 0.1
+  value_loss_coef: 0.1
   clip_eps: 0.1
-  save_freq: 10
+  save_freq: 100
+  cohere_env: false
   affixes:
     - 
       - "How many fruit does the other network have? I don't know, I must ask it: How many fruit do you have?\n"

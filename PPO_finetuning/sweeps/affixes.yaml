@@ -1,28 +1,40 @@
-value_loss_coef:
-  - 0.1
 clip_eps:
-  - 0.1
+  - 0.3
 ce_coef:
   - 0
 cur2_coef: 
-  - 1
-  - 0.5
+  - 0.9
+cur_coef:
   - 0
-
+score_coef:
+  - 1
+entropy_loss_coef:
+  - 0.1
+value_loss_coef:
+  - 0.1
+lr:
+  - 1.0e-07
+lr_warmup_min:
+  - 0
+lr_warmup_max:
+  - 1
+lr_warmup_steps:
+  - 5
+lora_r: 
+  - 4
+cohere_env:
+  - false
 affixes:
   -
     - 
-      - "How many kittens does the other network have? I don't know, I must ask it: How many kittens do you have?\n "
-      - ""
-    -
-      - ""
-      - ""
-      - ""
-  -
-    - 
-      - "You are in discussion with another agent that has a number of items. You are given a goal telling you which item you want to know about. You must ask questions and then complete your goal. An example goal could be: 'How many cardamon does the other network have?'. You would ask: 'I don't know, I must ask it: How many cardamon do you have?\n'. If the agent then tells you that it has 8 cardamon, you would answer: 'eight'.\n Goal:"
+      - "Goal: How many books does the other person have? You: How\
+      \ many books do you have? Answer: Eight. You: Eight.\n\
+      \ Goal: How many cups does the other person have? You: How many cups\
+      \ do you have? Answer: Two. You: Two. \nGoal: How many cookies does the\
+      \ other person have? You: How many cookies do you have? Answer: Sixteen.\
+      \ You: Sixteen.\nGoal:"
       - "You:"
     -
       - ""
-      - "Agent:"
-      - "You:"
+      - ""
+      - ""

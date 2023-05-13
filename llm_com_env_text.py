@@ -1,3 +1,5 @@
+# 5/5/2023 improved evaluation to be independent of case
+# TODO: look for first number, not any number
 import gym
 import torch
 from torch.utils.data import DataLoader
@@ -14,7 +16,13 @@ class LLMComEnvText(gym.Env):
     """Environment where the agent communicates with a frozen language model. Input and output are text to accomodate lamorel"""
 
     def __init__(
-        self, model, dataset_path, max_length=10, batch_size=1, n_turns=2, affix=None
+        self,
+        model,
+        dataset_path,
+        max_length=10,
+        batch_size=1,
+        n_turns=2,
+        affix=None,
     ):
         super().__init__()
         # non-trained model
@@ -75,8 +83,8 @@ class LLMComEnvText(gym.Env):
                 # reward could be adapted outside of env to match logits
                 # reward is 1 per correct answer
                 reward = [
-                    int(self.batch[2][i] in np.array(action)[i])
-                    for i in range(len(action))
+                    int(self.batch[2][i].lower() in _act.lower())
+                    for i, _act in enumerate(action)
                 ]
                 return [None] * len(action), reward, True, {"turn": self.turn}
 
@@ -93,7 +101,7 @@ class LLMComEnvText(gym.Env):
                     + self.affix[1][2]
                     for i in range(len(action))
                 ]
-            # print(_input)
+            print(_input)
 
             model_output = self.model.generate(_input, max_new_tokens=self.max_length)
             obs = model_output["text"]  # non - lamorel version

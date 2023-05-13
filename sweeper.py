@@ -20,7 +20,7 @@ def get_opts(arguments):
     arg_parser.add_argument(
         "--script_path",
         type=str,
-        default="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/main_2.py",
+        default="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/hf_acc_launch.py",
         help="path to the yaml file containing the parameters to sweep through",
     )
     arg_parser.add_argument(
@@ -92,7 +92,7 @@ def sweep_params(opts):
         for i, values in enumerate(it.product(*(params[key] for key in params))):
             job_path = log_path / str(i)
             job_path.mkdir(parents=True, exist_ok=True)
-            n_gpus = build_yaml(
+            n_gpus, n_nodes = build_yaml(
                 params.keys(), values, opts.default_params_path, job_path
             )
             sbatch_file = write_sbatch(
@@ -102,20 +102,34 @@ def sweep_params(opts):
                 opts.script_path,
                 opts.partition,
                 n_gpus,
+                n_nodes,
                 opts.time,
                 opts.memory,
                 opts.qos,
             )
             # adjust the port number
-            adjust_port_number(opts.acc_config_path, job_path, i)
+            adjust_accelerate(opts.acc_config_path, job_path, i, n_gpus, n_nodes)
             _return = os.system(f"sbatch {sbatch_file}")
     os.system(f"cp {opts.params_path} {log_path / 'params.yaml'}")
 
 
-def adjust_port_number(acc_config_path, log_path, job_idx):
+def adjust_accelerate(acc_config_path, log_path, job_idx, n_gpus, n_nodes):
+    """
+    ajust port number, number of gpus, number of nodes to match config
+    TODO: warn when overiding?
+    """
     with open(acc_config_path, "r") as f:
         acc_config = yaml.safe_load(f)
     acc_config["main_process_port"] = 6000 + job_idx
+    acc_config["num_processes"] = n_gpus
+    acc_config["num_machines"] = n_nodes
+    if hasattr(acc_config["deepspeed_config"], "deepspeed_config_file"):
+        acc_config["deepspeed_config"]["deepspeed_config_file"] = str(
+            log_path / "deepspeed_config.json"
+        )
+        os.system(
+            f"cp {acc_config['deepspeed_config']['deepspeed_config_file']} {log_path / 'deepspeed_config.json'}"
+        )
     with open(log_path / "accelerate_config.yaml", "w") as f:
         yaml.dump(acc_config, f)
 
@@ -141,7 +155,10 @@ def build_yaml(keys, values, default_path, log_path):
     with open(log_path / f"config.yaml", "w") as f:
         yaml.dump(default, f)
     # return the number of gpus
-    return default["lamorel_args"]["llm_args"]["parallelism"]["model_parallelism_size"]
+    return (
+        default["lamorel_args"]["llm_args"]["parallelism"]["model_parallelism_size"],
+        default["lamorel_args"]["accelerate_args"]["num_machines"],
+    )
 
 
 def write_sbatch(
@@ -151,6 +168,7 @@ def write_sbatch(
     script_path,
     partition,
     n_gpus,
+    n_nodes,
     time,
     mem,
     qos,
@@ -166,7 +184,7 @@ def write_sbatch(
 #SBATCH --partition={partition}
 #SBATCH --gres=gpu:{n_gpus}
 #SBATCH --qos={qos}
-#SBATCH --nodes=1
+#SBATCH --nodes=1##{n_nodes}
 #SBATCH --exclude=node044
 #SBATCH --nice=42
 #SBATCH --ntasks-per-node=1
@@ -180,7 +198,7 @@ conda activate llm2llm
 module load CUDA/11.4.3
 
 # python -m lamorel_launcher.launch --config-path {log_path} --config-name config rl_script_args.path={script_path}
-NCCL_P2P_DISABLE='1' PATH=$PATH NCCL_IB_DISABLE='1' accelerate launch --config_file={log_path / 'accelerate_config.yaml'} /homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/hf_acc_launch.py --config-path={log_path} --config-name='config'
+NCCL_P2P_DISABLE='1' PATH=$PATH NCCL_IB_DISABLE='1' accelerate launch --config_file={log_path / 'accelerate_config.yaml'} {script_path} --config-path={log_path} --config-name='config'
 echo "done"
 """
         )

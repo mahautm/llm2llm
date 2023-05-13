@@ -1,6 +1,6 @@
-'''
+"""
 PPO implementation taken from https://github.com/openai/spinningup
-'''
+"""
 
 import numpy as np
 import scipy
@@ -8,10 +8,12 @@ import torch
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
+
 def combined_shape(length, shape=None):
     if shape is None:
         return (length,)
     return (length, shape) if np.isscalar(shape) else (length, *shape)
+
 
 def discount_cumsum(x, discount):
     """
@@ -28,13 +30,16 @@ def discount_cumsum(x, discount):
     """
     return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
+
 def scores_to_proba_dists(scores):
     proba_dists = []
     scores_max = torch.max(scores, dim=1)[0]
     # scores_max cannot be 0, otherwise the softmax will be NaN. We add a small value to avoid this.
     scores_max += 1e-8
     for j in range(len(scores)):
-        proba_dists.append(F.softmax(scores[j] / scores_max[j], dim=-1).unsqueeze(dim=0))
+        proba_dists.append(
+            F.softmax(scores[j] / scores_max[j], dim=-1).unsqueeze(dim=0)
+        )
 
     proba_dists = torch.cat(proba_dists)
     dists = Categorical(probs=proba_dists)

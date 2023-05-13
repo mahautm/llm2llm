@@ -1,11 +1,9 @@
 """
 PPO implementation taken from https://github.com/openai/spinningup
 """
-
 import numpy as np
 import torch
-
-from . import discount_cumsum, combined_shape
+from utils.tools import discount_cumsum, combined_shape
 
 
 class PPOBuffer:
@@ -20,7 +18,7 @@ class PPOBuffer:
         self.adv_buf = np.zeros(size, dtype=np.float32)
         self.rew_buf = np.zeros(size, dtype=np.float32)
         self.ret_buf = np.zeros(size, dtype=np.float32)
-        self.val_buf = np.zeros(size, dtype=np.float32)
+        self.val_buf = [None for _ in range(size)]
         self.logp_buf = [None for _ in range(size)]  # np.zeros(size, dtype=np.float32)
         self.gamma, self.lam = gamma, lam
         self.ptr, self.path_start_idx, self.max_size = 0, 0, size
@@ -36,7 +34,38 @@ class PPOBuffer:
         self.logp_buf[self.ptr] = logp
         self.ptr += 1
 
-    def finish_path(self, batch_size):
+    def finish_logit_path(self, batch_size, seq_len):
+        # what I could do is add paths, AS IF the batch was bigger
+        for i in range(batch_size):
+            # determine path_slice made of two sequences of length seq_len, for each batch
+            path_slice = np.concatenate(
+                [
+                    np.array([i for i in range(seq_len)])
+                    + i * seq_len
+                    + j * seq_len * batch_size
+                    for j in range(
+                        (self.ptr - self.path_start_idx) // (seq_len * batch_size)
+                    )
+                ],
+                axis=0,
+            )
+            # I have doubts on the repetition of the last value
+            # TODO: check GAE lambda implementation
+            rews = np.append(self.rew_buf[path_slice], self.val_buf[path_slice][-1])
+            vals = np.append(self.val_buf[path_slice], self.val_buf[path_slice][-1])
+
+            # the next two lines implement GAE-Lambda advantage calculation
+            deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
+            self.adv_buf[path_slice] = discount_cumsum(deltas, self.gamma * self.lam)
+
+            # the next line computes rewards-to-go, to be targets for the value function
+            self.ret_buf[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
+        self.path_start_idx = self.ptr
+
+    def finish_path(self, batch_size, expand=False):
+        # what I could do is add paths, AS IF the batch was bigger
+        # Added expansion for per logit rewards. the expand parameter should be the number of logits
+
         for i in range(batch_size):
             path_slice = [
                 self.path_start_idx + i + j * batch_size
@@ -46,10 +75,18 @@ class PPOBuffer:
             vals = self.val_buf[path_slice]
 
             # the next two lines implement GAE-Lambda advantage calculation
-            # deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
-            self.adv_buf[path_slice] = discount_cumsum(vals, self.gamma)
+            deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
+            if expand:
+                _temp = np.zeros([expand * len(deltas)])
+                _temp[-len(deltas) :] = deltas
+                deltas = _temp
+            self.adv_buf[path_slice] = discount_cumsum(deltas, self.gamma * self.lam)
 
             # the next line computes rewards-to-go, to be targets for the value function
+            if expand:
+                _temp = np.zeros([expand * len(rews)])
+                _temp[-len(rews) :] = rews
+                rews = _temp
             self.ret_buf[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
         self.path_start_idx = self.ptr
 
