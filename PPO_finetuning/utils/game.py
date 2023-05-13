@@ -120,7 +120,7 @@ class StrToStrWrapper(torch.nn.Module):
             if not hasattr(self, "out_hs"):
                 self.out_hs = self.get_out_hs(output["hidden_states"])
             _in_hs = output["hidden_states"][0][-1][:, -1, :].squeeze()
-            result["curiosity"] = self.curiosity_module.auto_run(in_hs, self.out_hs)
+            result["curiosity"] = self.curiosity_module.auto_run(_in_hs, self.out_hs)
         return result
 
 
