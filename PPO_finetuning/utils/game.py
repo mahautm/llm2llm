@@ -75,7 +75,7 @@ class StrToStrWrapper(torch.nn.Module):
         # ignore padding
         scores = (
             _token_logs.masked_fill(_tokens == self.tokenizer.pad_token_id, 1.0)
-            .max(-1)
+            # .max(-1)
             .values
         )
         return scores
