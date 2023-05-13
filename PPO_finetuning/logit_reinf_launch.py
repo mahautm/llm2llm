@@ -53,15 +53,15 @@ def main(config_args):
             )
 
             # score the right answer, will be used as part of the reward
-            if infos["turn"] == 1:
-                with torch.no_grad():
-                    # to deal with tiny values we use logsoftmax instead of softmax, this is more of a penalty to minimize than a reward to maximize
-                    ans_score = wmodel.score(
-                        context=o, out_logs=log_probs, expected=env.batch[2]
-                    )
-            else:
-                # no reward before episode ends
-                ans_score = [[0] * len(a["out_sequence"][0])] * len(a["out_sequence"])
+            # if infos["turn"] == 1:
+            #     with torch.no_grad():
+            #         # to deal with tiny values we use logsoftmax instead of softmax, this is more of a penalty to minimize than a reward to maximize
+            #         ans_score = wmodel.score(
+            #             context=o, out_logs=log_probs, expected=env.batch[2]
+            #         )
+            # else:
+            #     # no reward before episode ends
+            #     ans_score = [[0] * len(a["out_sequence"][0])] * len(a["out_sequence"])
 
             new_o, r, d, infos = env.step(a["text"])
             ep_ret += sum(r)
@@ -74,8 +74,8 @@ def main(config_args):
                 # there is probably a way to batch this
                 assert len(a["out_sequence"][i]) == len(log_probs[i])
                 for j in range(len(a["out_sequence"][i])):
-                    reward = ans_score[i][j] * config_args.rl_script_args.score_coef
-                    reward += r[i] if j == len(a["out_sequence"][i]) - 1 else 0
+                    # reward = ans_score[i][j] * config_args.rl_script_args.score_coef
+                    reward = r[i] if j == len(a["out_sequence"][i]) - 1 else 0
                     # TODO: add curiosity reward
                     buf.store(
                         None,
