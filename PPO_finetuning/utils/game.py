@@ -84,7 +84,7 @@ class StrToStrWrapper(torch.nn.Module):
         _out_hs = []
         for _hs in hidden_states:
             _out_hs.append(_hs[-1][:, -1, :].squeeze())
-        return torch.stack(_out_hs)
+        return torch.stack(_out_hs).swapaxes(0, 1)
 
     def generate(self, inputs, **kwargs):
         inputs = self.prepare_inputs(inputs)
