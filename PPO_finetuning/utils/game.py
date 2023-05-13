@@ -212,7 +212,8 @@ def init_game(config_args, accelerator):
     # Set up experience buffer
     buf = PPOBuffer(
         config_args.rl_script_args.steps_per_epoch
-        * config_args.rl_script_args.batch_size,
+        * config_args.rl_script_args.batch_size
+        * config_args.rl_script_args.max_new_tokens,
         config_args.rl_script_args.gamma,
         config_args.rl_script_args.lam,
     )
