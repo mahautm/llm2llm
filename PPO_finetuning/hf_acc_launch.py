@@ -130,6 +130,10 @@ def main(config_args):
     wmodel, env, optimizer, lr_scheduler, buf, pad_token = init_game(
         config_args, accelerator
     )
+    # slight object modification as evil spaggheti code
+    buf.val_buf = torch.zeros(
+        [len(buf.val_buf), config_args.rl_script_args.max_new_tokens]
+    )
     accelerator.print(f"Done. Training...")
     # Prepare for interaction with environment
     o, ep_ret, ep_len = env.reset(), 0, 0
@@ -183,14 +187,14 @@ def main(config_args):
                 cur_r = np.array([0] * len(a["text"]))
 
             # score the right answer, will be used as part of the reward
-            if infos["turn"] == 1:
-                with torch.no_grad():
-                    ans_score = wmodel.score(
-                        context=o, out_logs=a["logits"], expected=env.batch[2]
-                    )
-            else:
-                # no reward before episode ends
-                ans_score = [0] * len(a["text"])
+            # if infos["turn"] == 1:
+            #     with torch.no_grad():
+            #         ans_score = wmodel.score(
+            #             context=o, out_logs=a["logits"], expected=env.batch[2]
+            #         )
+            # else:
+            #     # no reward before episode ends
+            #     ans_score = [0] * len(a["text"])
 
             new_o, r, d, infos = env.step(a["text"])
             ep_ret += sum(r)
@@ -202,9 +206,9 @@ def main(config_args):
                 buf.store(
                     obs,
                     r[i]
-                    + config_args.rl_script_args.score_coef * ans_score[i]
+                    # + config_args.rl_script_args.score_coef * ans_score[i]
                     + config_args.rl_script_args.cur_coef * cur_r[i],
-                    a["value"][i],
+                    a["value"][i].squeeze(),
                     a["logits"][i],
                 )
 

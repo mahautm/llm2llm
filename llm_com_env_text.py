@@ -83,7 +83,7 @@ class LLMComEnvText(gym.Env):
                 # reward could be adapted outside of env to match logits
                 # reward is 1 per correct answer
                 reward = [
-                    int(self.batch[2][i].lower() in _act.lower())
+                    int(f" {self.batch[2][i].lower()} " in _act.lower())
                     for i, _act in enumerate(action)
                 ]
                 return [None] * len(action), reward, True, {"turn": self.turn}
@@ -101,7 +101,7 @@ class LLMComEnvText(gym.Env):
                     + self.affix[1][2]
                     for i in range(len(action))
                 ]
-            print(_input)
+            # print(_input)
 
             model_output = self.model.generate(_input, max_new_tokens=self.max_length)
             obs = model_output["text"]  # non - lamorel version

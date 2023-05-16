@@ -13,8 +13,8 @@ main_process_ip: 127.0.0.1
 main_process_port: 6000
 main_training_function: main
 megatron_lm_config: {}
-num_machines:
-num_processes:
+num_machines: 1
+num_processes: 1
 rdzv_backend: static
 same_network: true
 tpu_env: []

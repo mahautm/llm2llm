@@ -15,6 +15,32 @@ def combined_shape(length, shape=None):
     return (length, shape) if np.isscalar(shape) else (length, *shape)
 
 
+def wt_cumsum(vector, wt):
+    # weighted cumulative sum with tensor operations
+    wts = wt ** ((len(vector) - 1.0) - torch.FloatTensor(range(len(vector))))
+    return torch.cumsum(wts * vector, dim=0) / wts
+
+
+def pad_merge(a, b):
+    # pad then concat
+    _position = (
+        (b.shape[1] - a.shape[1], 0)
+        if len(a.shape) == 2
+        else (0, 0, b.shape[1] - a.shape[1], 0)
+    )
+    return torch.cat(
+        [
+            torch.functional.F.pad(
+                a,
+                _position,
+                "constant",
+                0,
+            ),
+            b,
+        ],
+    )
+
+
 def discount_cumsum(x, discount):
     """
     magic from rllab for computing discounted cumulative sums of vectors.

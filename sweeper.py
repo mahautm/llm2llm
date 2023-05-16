@@ -185,8 +185,8 @@ def write_sbatch(
 #SBATCH --gres=gpu:{n_gpus}
 #SBATCH --qos={qos}
 #SBATCH --nodes=1##{n_nodes}
-#SBATCH --exclude=node044
-#SBATCH --nice=42
+#SBATCH --exclude=node044,node038,node039,node040,node042
+#SBATCH --nice=10
 #SBATCH --ntasks-per-node=1
 #SBATCH --time={time}
 #SBATCH --mem={mem}

@@ -157,7 +157,15 @@ def init_game(config_args, accelerator):
         if config_args.rl_script_args.cur_coef != 0
         else None
     )
-    critic = Critic(llm_hidden_size=model.config.hidden_size)
+    critic = (
+        Critic(
+            llm_hidden_size=512
+            if model_path == "opt-350m"
+            else model.config.hidden_size
+        )
+        if config_args.rl_script_args.value_loss_coef != 0
+        else None
+    )
     # Instantiate environment with non LoRa, untrained LLM
     if config_args.rl_script_args.cohere_key:
         # TODO: investigate this versioning issue

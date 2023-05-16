@@ -10,46 +10,51 @@ lamorel_args:
     num_machines: 1
   llm_args:
     model_type: causal
-    model_path: facebook/opt-6.7b
+    model_path: facebook/opt-350m
     pretrained: true
     minibatch_size: 1
     parallelism:
       use_gpu: true
-      model_parallelism_size: 5
+      model_parallelism_size: 1
       synchronize_gpus_after_scoring: false
       empty_cuda_cache_after_scoring: false
   updater_args:
 rl_script_args:
   path: /homedtcl/mmahaut/projects/lamorel/zoo/llm2llm/train.py
   dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/mindless_dataset_randomized_train.txt
-  epochs: 500
+  epochs: 10000
   steps_per_epoch: 2
-  batch_size: 10
+  batch_size: 20
   max_new_tokens: 30
   ppo_epochs: 2
   lam: 0.99
   gamma: 0.99
-  clip_ration: 0.2
+  clip_ratio: 0.2
   target_kl: 0.01
   max_ep_len: 3
-  lr: 1e-8
-  lr_warmup_steps: 500
+  lr: 1e-6
+  lr_warmup_steps: 0
   lr_warmup_max: 0.001
   lr_warmup_min: 0
   lora_r: 8
   score_coef: 0.1
-  cur_coef: 0.1
+  cur_coef: 0
   cur2_coef: 0.5
   ce_coef: 0.1
-  entropy_loss_coef: 0.1
-  value_loss_coef: 0.1
+  entropy_loss_coef: 0.05
+  value_loss_coef: 0.5
   clip_eps: 0.1
   save_freq: 100
   cohere_key: false
   affixes:
     - 
-      - "How many fruit does the other network have? I don't know, I must ask it: How many fruit do you have?\n"
-      - ""
+      - "Goal: How many books does the other person have? You: How\
+      \ many books do you have? Answer: Eight. You: Eight.\n\
+      \ Goal: How many cups does the other person have? You: How many cups\
+      \ do you have? Answer: Two. You: Two. \nGoal: How many cookies does the\
+      \ other person have? You: How many cookies do you have? Answer: Sixteen.\
+      \ You: Sixteen.\nGoal:"
+      - "You:"
     -
       - ""
       - ""
