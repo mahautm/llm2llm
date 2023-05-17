@@ -13,7 +13,7 @@ entropy_loss_coef:
 value_loss_coef:
   - 0.1
 kl_loss_coeff:
-  - 1
+  - 100
 lr:
   - 1.0e-05
 lr_warmup_min:
@@ -21,7 +21,7 @@ lr_warmup_min:
 lr_warmup_max:
   - 1
 lr_warmup_steps:
-  - 0
+  - 1000
 lora_r: 
   - 4
 cohere_key:

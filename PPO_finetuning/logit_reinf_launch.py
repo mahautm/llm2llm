@@ -52,10 +52,12 @@ def main(config_args):
                         if _cut_a != _a:
                             a["text"][i] = _cut_a + " Answer:"
                 # get the gradients
-                logp = wmodel(a["text"])["logits"][:, :-1, :]
+                out = wmodel(a["text"], return_sequences=True)
+                logits = out["logits"][:, :-1, :]
+                seq = out["sequences"][:, :-1]
                 # introducing kl_divergence to original model (& NOT to last iteration -- that way we do not stray too far from natural language)
                 with torch.no_grad():
-                    klogp = froz_model(a["text"])["logits"][:, :-1, :]
+                    klogits = froz_model(a["text"])["logits"][:, :-1, :]
             accelerator.print(
                 f"Generated turn {infos['turn']}, max_new_tokens: {config_args.rl_script_args.max_new_tokens}, a: {a['text']} expected: {env.batch[2]}"
             )
@@ -67,10 +69,11 @@ def main(config_args):
 
             if new_o[0] is not None:
                 # Store msg1 before rerunning the model to get msg2
-                old_logp = logp
-                old_klogp = klogp
+                old_seq = seq
+                old_logits = logits
+                old_klogits = klogits
                 if config_args.rl_script_args.value_loss_coef != 0:
-                    old_val = a["value"][:, : old_logp.shape[1]].squeeze()
+                    old_val = a["value"][:, : old_logits.shape[1]].squeeze()
                 # no intermediate reward
                 # second part of the conversation has access to entire history
                 o = [o[i] + a["text"][i] + new_o[i] + "You:" for i in range(len(o))]
@@ -92,14 +95,16 @@ def main(config_args):
                 )
 
                 # prepare data for loss
-                # prepare logp
+                # prepare logits
                 # TODO: all pad tokens should be ignored and therefore replaced by ones in the logits?
-                logp = pad_merge(old_logp, logp)
-                # prepare klogp
-                klogp = pad_merge(old_klogp, klogp)
+                logits = pad_merge(old_logits, logits)
+                # prepare klogits
+                klogits = pad_merge(old_klogits, klogits)
+                # prepare sequences
+                seq = pad_merge(old_seq, seq, pad_value=pad_token)
                 # prepare values (either critic or baseline = average return)
                 if config_args.rl_script_args.value_loss_coef != 0:
-                    val = pad_merge(old_val, a["value"][:, : logp.shape[1]].squeeze())
+                    val = pad_merge(old_val, a["value"][:, : logits.shape[1]].squeeze())
                 else:
                     # make tensor with average reward so for each element in batch
                     val = torch.ones(len(r)) * av_val
@@ -109,7 +114,7 @@ def main(config_args):
                     # discount as would be done for real rewards
                     val = torch.functional.F.pad(
                         val.unsqueeze(1),
-                        (0, logp.shape[1] - 1, logp.shape[0] - len(r), 0),
+                        (0, logits.shape[1] - 1, logits.shape[0] - len(r), 0),
                         "constant",
                         0,
                     )
@@ -126,7 +131,7 @@ def main(config_args):
                 r = torch.tensor(r).repeat(2).unsqueeze(1)
                 r = torch.functional.F.pad(
                     r,
-                    (0, logp.shape[1] - 1, 0, 0),
+                    (0, logits.shape[1] - 1, 0, 0),
                     "constant",
                     0,
                 )
@@ -142,30 +147,40 @@ def main(config_args):
                 adv = ret - val
 
                 # Perform REINFORCE update! as in https://github.com/robertodessi/EGG/blob/rll/egg/zoo/emergent_captioner/finetuning/game.py
-                dist = Categorical(logits=logp)
-                entropy = dist.entropy().mean()
+                dist = Categorical(logits=logits)
+                entropy = dist.entropy()
                 weighted_entropy = (
                     entropy * config_args.rl_script_args.entropy_loss_coef
                 )
                 # lets calculate the KL divergence between the original (froz_model) and new policies
                 kl_div = torch.nn.functional.kl_div(
-                    logp,
-                    klogp,
-                ).mean()
+                    logits.log_softmax(-1),
+                    klogits.log_softmax(-1),
+                    log_target=True,
+                    reduction="none",
+                )
+                kl_div = kl_div.sum(dim=-1)
+
+                # compute normalized log_probs of generated captions
+                log_probs = torch.gather(
+                    logits, dim=2, index=seq.unsqueeze(2)
+                ).squeeze()
+                # log_probs *= mask
+                # log_probs = log_probs.sum(1) / msg_lengths
 
                 weighted_kl_div = kl_div * config_args.rl_script_args.kl_loss_coeff
                 weighted_value_loss = (
                     (ret.detach() - val) ** 2
-                ).mean() * config_args.rl_script_args.value_loss_coef
+                ) * config_args.rl_script_args.value_loss_coef
                 # batch normalisation of advantage trick
                 adv = (adv - adv.mean()) / (adv.std() + 1e-12)
-                policy_loss = (adv[:, :, None] * logp).mean()
+                policy_loss = adv * log_probs
                 optimized_loss = (
                     policy_loss
                     - weighted_entropy
                     + weighted_value_loss
                     + weighted_kl_div
-                )
+                ).mean()
 
                 accelerator.backward(optimized_loss)
                 optimizer.step()
@@ -174,7 +189,7 @@ def main(config_args):
                     lr_scheduler.step()
                 # log
                 accelerator.print(
-                    f"ret: {ret.mean().item()} - val: {val.mean().item()} - adv: {adv.mean()} - policy_loss: {policy_loss.item()} - entropy: {entropy.item()} - weighted_entropy: {weighted_entropy.item()} - weighted_value_loss: {weighted_value_loss.item()} - weighted_kl_div: {weighted_kl_div.item()} - kl_div: {kl_div.item()} - lr: {optimizer.param_groups[0]['lr']}"
+                    f"return: {ret.mean().item()} - val: {val.mean().item()} - advantage: {adv.mean()} - policy_loss: {policy_loss.mean().item()} - entropy: {entropy.mean().item()} - weighted_entropy: {weighted_entropy.mean().item()} - weighted_value_loss: {weighted_value_loss.mean().item()} - weighted_kl_div: {weighted_kl_div.mean().item()} - kl_div: {kl_div.mean().item()} - lr: {optimizer.param_groups[0]['lr']}"
                 )
                 # reset
                 o, ep_ret, ep_len = env.reset(), 0, 0

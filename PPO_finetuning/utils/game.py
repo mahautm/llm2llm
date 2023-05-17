@@ -48,9 +48,11 @@ class StrToStrWrapper(torch.nn.Module):
             inputs[k] = v.to(self.accelerator.device)
         return inputs
 
-    def forward(self, inputs, **kwargs):
+    def forward(self, inputs, return_sequences=False, **kwargs):
         inputs = self.prepare_inputs(inputs)
         output = self.model(**inputs, **kwargs)
+        if return_sequences:
+            output["sequences"] = inputs["input_ids"]
         return output
 
     def save_pretrained(self, save_directory):

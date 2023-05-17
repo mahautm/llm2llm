@@ -21,7 +21,7 @@ def wt_cumsum(vector, wt):
     return torch.cumsum(wts * vector, dim=0) / wts
 
 
-def pad_merge(a, b):
+def pad_merge(a, b, pad_value=0):
     # pad then concat
     _position = (
         (b.shape[1] - a.shape[1], 0)
@@ -34,7 +34,7 @@ def pad_merge(a, b):
                 a,
                 _position,
                 "constant",
-                0,
+                pad_value,
             ),
             b,
         ],
