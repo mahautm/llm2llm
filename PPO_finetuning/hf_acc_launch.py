@@ -127,7 +127,7 @@ def perform_update(model, optimizer, lr_scheduler, contexts, **kwargs):
 )
 def main(config_args):
     # init
-    wmodel, env, optimizer, lr_scheduler, buf, pad_token = init_game(
+    _, wmodel, env, optimizer, lr_scheduler, buf, pad_token = init_game(
         config_args, accelerator
     )
     # slight object modification as evil spaggheti code

@@ -2,6 +2,7 @@
 from utils.tools import scores_to_proba_dists, wt_cumsum, pad_merge
 from utils.game import init_game
 from accelerate import Accelerator
+from torch.distributions import Categorical
 
 import hydra
 import torch
@@ -19,12 +20,13 @@ accelerator = Accelerator()
     version_base="1.1",
 )
 def main(config_args):
-    wmodel, env, optimizer, lr_scheduler, buf, pad_token = init_game(
+    froz_model, wmodel, env, optimizer, lr_scheduler, buf, pad_token = init_game(
         config_args, accelerator
     )
     # instead of a critic REINFORCE can use as a baseline the average of previous returns
     if config_args.rl_script_args.value_loss_coef == 0:
-        vals = [0]
+        av_val = 0
+        nvals = 1
     # Prepare for interaction with environment
     o, ep_ret, ep_len = env.reset(), 0, 0
     infos = {"turn": 0}
@@ -50,45 +52,23 @@ def main(config_args):
                         if _cut_a != _a:
                             a["text"][i] = _cut_a + " Answer:"
                 # get the gradients
-                output = wmodel(a["text"])
-                logp = output["logits"][:, :-1, :]
+                logp = wmodel(a["text"])["logits"][:, :-1, :]
+                # introducing kl_divergence to original model (& NOT to last iteration -- that way we do not stray too far from natural language)
+                with torch.no_grad():
+                    klogp = froz_model(a["text"])["logits"][:, :-1, :]
             accelerator.print(
                 f"Generated turn {infos['turn']}, max_new_tokens: {config_args.rl_script_args.max_new_tokens}, a: {a['text']} expected: {env.batch[2]}"
             )
-            # print("logprobs", log_probs.shape)
 
-            # score the right answer, will be used as part of the reward
-            # if infos["turn"] == 1:
-            #     with torch.no_grad():
-            #         # to deal with tiny values we use logsoftmax instead of softmax, this is more of a penalty to minimize than a reward to maximize
-            #         ans_score = wmodel.score(
-            #             context=o, out_logs=log_probs, expected=env.batch[2]
-            #         )
-            # else:
-            #     # no reward before episode ends
-            #     ans_score = [[0] * len(a["out_sequence"][0])] * len(a["out_sequence"])
-
+            # send query to environment and get response
             new_o, r, d, infos = env.step(a["text"])
             ep_ret += sum(r)
             ep_len += 1
 
-            # for i, obs in enumerate(o):
-            #     # all sequence sizes should match though
-            #     # there is probably a way to batch this
-            #     for j in range(len(log_probs[i])):
-            #         # reward = ans_score[i][j] * config_args.rl_script_args.score_coef
-            #         reward = r[i] if j == len(log_probs[i]) - 1 else 0
-            #         # TODO: add curiosity reward
-            #         buf.store(
-            #             None,
-            #             reward,
-            #             a["value"][i][j],
-            #             log_probs[i][j],
-            #         )
-
             if new_o[0] is not None:
                 # Store msg1 before rerunning the model to get msg2
                 old_logp = logp
+                old_klogp = klogp
                 if config_args.rl_script_args.value_loss_coef != 0:
                     old_val = a["value"][:, : old_logp.shape[1]].squeeze()
                 # no intermediate reward
@@ -112,10 +92,41 @@ def main(config_args):
                 )
 
                 # prepare data for loss
-                # no old rewards, as only last turn grants rewards, fill additional space with 0s
+                # prepare logp
+                # TODO: all pad tokens should be ignored and therefore replaced by ones in the logits?
+                logp = pad_merge(old_logp, logp)
+                # prepare klogp
+                klogp = pad_merge(old_klogp, klogp)
+                # prepare values (either critic or baseline = average return)
+                if config_args.rl_script_args.value_loss_coef != 0:
+                    val = pad_merge(old_val, a["value"][:, : logp.shape[1]].squeeze())
+                else:
+                    # make tensor with average reward so for each element in batch
+                    val = torch.ones(len(r)) * av_val
+                    # keep a running average of the average reward
+                    av_val = sum(r) / len(r) * 1 / nvals + av_val * (1 - 1 / nvals)
+                    nvals += 1
+                    # discount as would be done for real rewards
+                    val = torch.functional.F.pad(
+                        val.unsqueeze(1),
+                        (0, logp.shape[1] - 1, logp.shape[0] - len(r), 0),
+                        "constant",
+                        0,
+                    )
+                    val = (
+                        wt_cumsum(
+                            val.flatten(),
+                            config_args.rl_script_args.gamma,
+                        )
+                        .reshape(-1, val.shape[1])
+                        .to(accelerator.device)
+                    )
+                # prepare rewards
+                # no old rewards, we repeat turn2 rewards at turn1, fill additional space with 0s
+                r = torch.tensor(r).repeat(2).unsqueeze(1)
                 r = torch.functional.F.pad(
-                    torch.tensor(r).unsqueeze(1),
-                    (0, logp.shape[1] - 1, logp.shape[0] - len(r), 0),
+                    r,
+                    (0, logp.shape[1] - 1, 0, 0),
                     "constant",
                     0,
                 )
@@ -127,32 +138,34 @@ def main(config_args):
                     .reshape(-1, r.shape[1])
                     .to(accelerator.device)
                 )
-                # TODO: all pad tokens should be ignored and therefore replaced by ones in the logits?
-                logp = pad_merge(old_logp, logp)
-                if config_args.rl_script_args.value_loss_coef != 0:
-                    val = pad_merge(old_val, a["value"][:, : logp.shape[1]].squeeze())
-                else:
-                    _val = sum(vals) / len(vals)
-                    val = torch.ones_like(ret) * _val
-                    vals.append(ret.mean())
 
-                # print("shapes", logp.shape, val.shape, ret.shape)
                 adv = ret - val
 
                 # Perform REINFORCE update! as in https://github.com/robertodessi/EGG/blob/rll/egg/zoo/emergent_captioner/finetuning/game.py
-                dist = scores_to_proba_dists(logp)
+                dist = Categorical(logits=logp)
                 entropy = dist.entropy().mean()
                 weighted_entropy = (
                     entropy * config_args.rl_script_args.entropy_loss_coef
                 )
-                # weighted_kl_div = kl_div * config_args.rl_script_args.kl_div_coeff
+                # lets calculate the KL divergence between the original (froz_model) and new policies
+                kl_div = torch.nn.functional.kl_div(
+                    logp,
+                    klogp,
+                ).mean()
+
+                weighted_kl_div = kl_div * config_args.rl_script_args.kl_loss_coeff
                 weighted_value_loss = (
                     (ret.detach() - val) ** 2
                 ).mean() * config_args.rl_script_args.value_loss_coef
                 # batch normalisation of advantage trick
                 adv = (adv - adv.mean()) / (adv.std() + 1e-12)
                 policy_loss = (adv[:, :, None] * logp).mean()
-                optimized_loss = policy_loss - weighted_entropy + weighted_value_loss
+                optimized_loss = (
+                    policy_loss
+                    - weighted_entropy
+                    + weighted_value_loss
+                    + weighted_kl_div
+                )
 
                 accelerator.backward(optimized_loss)
                 optimizer.step()
@@ -161,7 +174,7 @@ def main(config_args):
                     lr_scheduler.step()
                 # log
                 accelerator.print(
-                    f"ret: {ret.mean().item()} - val: {val.mean().item()} - adv: {adv.mean()} - policy_loss: {policy_loss.item()} - entropy: {entropy.item()} - weighted_entropy: {weighted_entropy.item()} - weighted_value_loss: {weighted_value_loss.item()}"
+                    f"ret: {ret.mean().item()} - val: {val.mean().item()} - adv: {adv.mean()} - policy_loss: {policy_loss.item()} - entropy: {entropy.item()} - weighted_entropy: {weighted_entropy.item()} - weighted_value_loss: {weighted_value_loss.item()} - weighted_kl_div: {weighted_kl_div.item()} - kl_div: {kl_div.item()} - lr: {optimizer.param_groups[0]['lr']}"
                 )
                 # reset
                 o, ep_ret, ep_len = env.reset(), 0, 0

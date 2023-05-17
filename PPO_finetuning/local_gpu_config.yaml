@@ -30,9 +30,9 @@ rl_script_args:
   lam: 0.99
   gamma: 0.99
   clip_ratio: 0.2
-  target_kl: 0.01
+  kl_loss_coeff: 0.1
   max_ep_len: 3
-  lr: 1e-6
+  lr: 6e-6
   lr_warmup_steps: 0
   lr_warmup_max: 0.001
   lr_warmup_min: 0
@@ -42,7 +42,7 @@ rl_script_args:
   cur2_coef: 0.5
   ce_coef: 0.1
   entropy_loss_coef: 0.05
-  value_loss_coef: 0.5
+  value_loss_coef: 0.0
   clip_eps: 0.1
   save_freq: 100
   cohere_key: false

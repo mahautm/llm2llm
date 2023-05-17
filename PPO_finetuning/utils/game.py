@@ -160,7 +160,7 @@ def init_game(config_args, accelerator):
     critic = (
         Critic(
             llm_hidden_size=512
-            if model_path == "opt-350m"
+            if model_path == "facebook/opt-350m"
             else model.config.hidden_size
         )
         if config_args.rl_script_args.value_loss_coef != 0
@@ -191,10 +191,10 @@ def init_game(config_args, accelerator):
         lora_alpha=32,
         lora_dropout=0.1,
     )
-    model = get_peft_model(model, peft_config)
-    model.print_trainable_parameters()
+    lora_model = get_peft_model(model, peft_config)
+    lora_model.print_trainable_parameters()
     # wrap the LoRa model
-    wmodel = StrToStrWrapper(model, tokenizer, accelerator, critic, c_module)
+    wmodel = StrToStrWrapper(lora_model, tokenizer, accelerator, critic, c_module)
 
     optimizer = DummyOptim(wmodel.parameters(), lr=config_args.rl_script_args.lr)
     # optimizer graveyard, rip
@@ -230,4 +230,7 @@ def init_game(config_args, accelerator):
     wmodel, env.dataloader, optimizer, lr_scheduler = accelerator.prepare(
         wmodel, env.dataloader, optimizer, lr_scheduler
     )
-    return wmodel, env, optimizer, lr_scheduler, buf, pad_token
+    # for kl div
+    froz_model = StrToStrWrapper(model, tokenizer, accelerator=accelerator)
+
+    return froz_model, wmodel, env, optimizer, lr_scheduler, buf, pad_token
