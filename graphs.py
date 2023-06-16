@@ -95,7 +95,7 @@ def plot_data(
     # create a dataframe with the data
     df = pd.concat(data)
     # plot the data
-    sns.lineplot(x=df.index, y=metric, hue=hue, data=df)
+    sns.lineplot(x=df.index, y=metric, hue=hue, data=df, palette="colorblind")
     # add title
     if title is not None:
         plt.title(title)

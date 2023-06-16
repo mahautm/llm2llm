@@ -45,9 +45,6 @@ class CuriosityModule(nn.Module):  # (BaseModuleFunction):
             self.hs_o = hs_new_o
             self.hs_a = hs_new_a
 
-    def double_auto_run(self, hs_new_o, hs_a):
-        pass
-
     def forward(
         self, hs_o, hs_a, hs_new_o
     ):  # (self, forward_outputs, minibatch, tokenized_context,  **kwargs):
@@ -67,7 +64,7 @@ class CuriosityModule(nn.Module):  # (BaseModuleFunction):
             .squeeze()
         )
         inverse_loss = torch.nn.functional.mse_loss(pred_act, hs_a)
-        # print(f"curiosity reward: {c_rew.mean()}, inverse loss: {inverse_loss}")
+        print(f"curiosity reward: {c_rew.mean()}, inverse loss: {inverse_loss}")
         self.loss = c_rew + inverse_loss
         return c_rew
 

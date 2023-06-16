@@ -15,10 +15,18 @@ def combined_shape(length, shape=None):
     return (length, shape) if np.isscalar(shape) else (length, *shape)
 
 
-def wt_cumsum(vector, wt):
-    # weighted cumulative sum with tensor operations
-    wts = wt ** ((len(vector) - 1.0) - torch.FloatTensor(range(len(vector))))
-    return torch.cumsum(wts * vector, dim=0) / wts
+# def wt_cumsum(t, wt):
+#     # weighted cumulative sum with tensor operations
+#     wts = wt ** torch.arange(t.shape[1], device=t.device)
+#     return (torch.cumsum(wts * t.flip([1]), dim=1) / wts).flip([1])
+def discount_cumsum(t, discount):
+    wts = discount ** torch.arange(
+        t.shape[1], dtype=torch.float64, device=t.device
+    )  # pre-compute all discounts
+    x = wts * t  # weighted vector
+    cum_sum = torch.cumsum(x, dim=1)  # forward cumsum
+    re_cum_sum = x - cum_sum + cum_sum[:, -1:]  # reversed cumsum
+    return re_cum_sum / wts
 
 
 def pad_merge(a, b, pad_value=0):
@@ -41,20 +49,20 @@ def pad_merge(a, b, pad_value=0):
     )
 
 
-def discount_cumsum(x, discount):
-    """
-    magic from rllab for computing discounted cumulative sums of vectors.
-    input:
-        vector x,
-        [x0,
-         x1,
-         x2]
-    output:
-        [x0 + discount * x1 + discount^2 * x2,
-         x1 + discount * x2,
-         x2]
-    """
-    return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
+# def discount_cumsum(x, discount):
+#     """
+#     magic from rllab for computing discounted cumulative sums of vectors.
+#     input:
+#         vector x,
+#         [x0,
+#          x1,
+#          x2]
+#     output:
+#         [x0 + discount * x1 + discount^2 * x2,
+#          x1 + discount * x2,
+#          x2]
+#     """
+#     return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
 
 def scores_to_proba_dists(scores):

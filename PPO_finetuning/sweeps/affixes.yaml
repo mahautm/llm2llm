@@ -9,31 +9,38 @@ cur_coef:
 score_coef:
   - 1
 entropy_loss_coef:
-  - 0.1
+  - 0.001
 value_loss_coef:
-  - 0.1
+  - 0
 kl_loss_coeff:
+  - 0
+  - 1
+  - 10
   - 100
 lr:
-  - 1.0e-05
+  - 1.0e-04
 lr_warmup_min:
   - 0
 lr_warmup_max:
   - 1
 lr_warmup_steps:
-  - 1000
+  - 1
 lora_r: 
-  - 4
+  - 16
+gamma:
+  - 0.99
 cohere_key:
   - false
+affix_num_steps:
+  - null
 affixes:
   -
     - 
-      - "Goal: How many books does the other person have? You: How\
-      \ many books do you have? Answer: Eight. You: Eight.\n\
-      \ Goal: How many cups does the other person have? You: How many cups\
-      \ do you have? Answer: Two. You: Two. \nGoal: How many cookies does the\
-      \ other person have? You: How many cookies do you have? Answer: Sixteen.\
+      - "Goal: How many green items does the other person have? You: How\
+      \ many green items do you have? Answer: Eight. You: Eight.\n\
+      \ Goal: How many weird items does the other person have? You: How many weird items\
+      \ do you have? Answer: Two. You: Two. \nGoal: How many salted items does the\
+      \ other person have? You: How many salted items do you have? Answer: Sixteen.\
       \ You: Sixteen.\nGoal:"
       - "You:"
     -

@@ -101,6 +101,12 @@ class StrToStrWrapper(torch.nn.Module):
         _out_logs = torch.stack(output["scores"])
         # _out_hs = output["hidden_states"][-1][-1][:, -1, :].squeeze()
         # _in_hs = output["hidden_states"][0][-1][:, -1, :].squeeze()
+        print(
+            "output['sequences']",
+            output["sequences"].shape,
+            "inputs['input_ids']",
+            inputs["input_ids"].shape,
+        )
         result = {
             "text": self.tokenizer.batch_decode(
                 output.sequences[
@@ -121,8 +127,9 @@ class StrToStrWrapper(torch.nn.Module):
         if self.curiosity_module is not None:
             if not hasattr(self, "out_hs"):
                 self.out_hs = self.get_out_hs(output["hidden_states"])
-            _in_hs = output["hidden_states"][0][-1][:, -1, :].squeeze()
-            result["curiosity"] = self.curiosity_module.auto_run(_in_hs, self.out_hs)
+            result["curiosity"] = self.curiosity_module(
+                self.out_hs[:, :-2], self.out_hs[:, 1:-1], self.out_hs[:, 2:]
+            )
         return result
 
 
@@ -143,6 +150,9 @@ def init_game(config_args, accelerator):
     accelerator.print(f"Creating {model_path} agent...")
     # with init_empty_weights:
     model = AutoModelForCausalLM.from_pretrained(model_path)
+    fmodel = AutoModelForCausalLM.from_pretrained(
+        model_path
+    )  # probably not optimal. for kl
     for param in model.parameters():
         param.requires_grad = False  # freeze the model - train adapters later
         if param.ndim == 1:
@@ -152,19 +162,18 @@ def init_game(config_args, accelerator):
     model.gradient_checkpointing_enable()  # reduce number of stored activations
     # model.enable_input_require_grads()
     model.lm_head = CastOutputToFloat(model.lm_head)
+    llm_hidden_size = (
+        512 if model_path == "facebook/opt-350m" else model.config.hidden_size
+    )
     accelerator.print(f"Done. Creating curiosity module...")
     # Setting up curiosity module
     c_module = (
-        CuriosityModule(llm_hidden_size=model.config.hidden_size)
+        CuriosityModule(llm_hidden_size=llm_hidden_size)
         if config_args.rl_script_args.cur_coef != 0
         else None
     )
     critic = (
-        Critic(
-            llm_hidden_size=512
-            if model_path == "facebook/opt-350m"
-            else model.config.hidden_size
-        )
+        Critic(llm_hidden_size=llm_hidden_size)
         if config_args.rl_script_args.value_loss_coef != 0
         else None
     )
@@ -176,7 +185,7 @@ def init_game(config_args, accelerator):
         env_llm = CohereWrapper(co)
         # accelerator.print(f"using cohere version {version} as env_llm")
     else:
-        env_llm = StrToStrWrapper(model, tokenizer, accelerator=accelerator)
+        env_llm = StrToStrWrapper(fmodel, tokenizer, accelerator=accelerator)
     env = LLMComEnvText(
         env_llm,
         config_args.rl_script_args.dataset_path,
@@ -184,6 +193,16 @@ def init_game(config_args, accelerator):
         batch_size=config_args.rl_script_args.batch_size,
         affix=config_args.rl_script_args.affixes,
     )
+    if config_args.rl_script_args.valid_dataset_path:
+        venv = LLMComEnvText(
+            env_llm,
+            config_args.rl_script_args.valid_dataset_path,
+            max_length=config_args.rl_script_args.max_new_tokens,
+            batch_size=config_args.rl_script_args.batch_size,
+            affix=config_args.rl_script_args.affixes,
+        )
+    else:
+        venv = None
 
     accelerator.print(f"Done. Adding LoRa to {model_path} agent...")
     peft_config = LoraConfig(
@@ -191,7 +210,7 @@ def init_game(config_args, accelerator):
         inference_mode=False,
         r=config_args.rl_script_args.lora_r,
         lora_alpha=32,
-        lora_dropout=0.1,
+        lora_dropout=0,
     )
     lora_model = get_peft_model(model, peft_config)
     lora_model.print_trainable_parameters()
@@ -233,6 +252,58 @@ def init_game(config_args, accelerator):
         wmodel, env.dataloader, optimizer, lr_scheduler
     )
     # for kl div
-    froz_model = StrToStrWrapper(model, tokenizer, accelerator=accelerator)
+    froz_model = StrToStrWrapper(fmodel, tokenizer, accelerator=accelerator).to(
+        accelerator.device
+    )
 
-    return froz_model, wmodel, env, optimizer, lr_scheduler, buf, pad_token
+    return froz_model, wmodel, env, venv, optimizer, lr_scheduler, buf, pad_token
+
+
+def evaluate(
+    model,
+    venv,
+    pad_token,
+    accelerator,
+    steps_per_epoch,
+    max_new_tokens,
+    log_file=None,
+    n_episodes=None,
+):
+    "evaluates given model on validation env and validation set"
+    model.eval()
+    infos = {}
+    o, r, done, infos["turn"] = venv.reset(), 0, False, 0
+
+    for t in range(steps_per_epoch):
+        with torch.no_grad():
+            # no sampling, evaluation is greedy
+            a = model.generate(
+                o,
+                max_new_tokens=max_new_tokens,
+                pad_token_id=pad_token,
+            )
+        # Answer is still our stop token for evaluation
+        if infos["turn"] == 0:
+            for i, _a in enumerate(a["text"]):
+                if " Answer:" in _a:
+                    _cut_a = _a.split(" Answer:")[0]
+                    if _cut_a != _a:
+                        a["text"][i] = _cut_a + " Answer:"
+            # get the gradients
+        accelerator.print(
+            f"Generated turn {infos['turn']}, max_new_tokens: {max_new_tokens}, eval_a: {a['text']}"
+        )
+
+        o, r, done, infos = venv.step(a["text"])
+        if done:
+            # log the reward
+            accelerator.print(f"Eval reward: {sum(r)/len(r)}, batch_size: {len(r)}")
+
+            if log_file is not None:
+                with open(log_file, "a") as f:
+                    f.write(
+                        f"Eval episode {n_episodes} - GPU {accelerator.device} - Acc {sum(r)/len(r)}\n"
+                    )
+                    for k, v in venv.render().items():
+                        f.write(f"{k} : {v}\n")
+            break

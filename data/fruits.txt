@@ -1,0 +1,100 @@
+ackee	ackees
+almond	almonds
+apple	apples
+apricot	apricots
+artichoke	artichokes
+asparagus	asparagus
+avocado	avocados
+banana	bananas
+beet	beets
+black-eyed pea	black-eyed peas
+blackberry	blackberries
+blueberry	blueberries
+boysenberry	boysenberries
+brazil nut	brazil nuts
+broccoli	broccoli
+brussels sprout	brussels sprouts
+cabbage	cabbages
+carrot	carrots
+cashew	cashews
+cauliflower	cauliflowers
+cherimoya	cherimoyas
+cherry	cherries
+chestnut	chestnuts
+chickpea	chickpeas
+chili pepper	chili peppers
+clementine	clementines
+cranberry	cranberries
+cucumber	cucumbers
+currant	currants
+daikon	daikons
+date	dates
+dragon fruit	dragon fruits
+eggplant	eggplants
+fig	figs
+grapefruit	grapefruits
+guava	guavas
+haricot	haricots
+hazelnut	hazelnuts
+jackfruit	jackfruits
+kaki	kakis
+kiwi	kiwis
+kohlrabi	kohlrabis
+kola nut	kola nuts
+kumquat	kumquats
+leek	leeks
+lemon	lemons
+lentil	lentils
+lime	limes
+lingonberry	lingonberries
+longan	longans
+lychee	lychees
+macadamia nut	macadamia nuts
+mango	mangos
+marula	marulas
+melon	melons
+morel	morels
+mushroom	mushrooms
+nectarine	nectarines
+okra	okras
+olive	olives
+onion	onions
+orange	oranges
+papaya	papayas
+parsnip	parsnips
+passion fruit	passion fruits
+peach	peaches
+peanut	peanuts
+pear	pears
+pea	peas
+pecan	pecans
+pepper	peppers
+persimmon	persimmons
+pineapple	pineapples
+pistachio	pistachios
+plantain	plantains
+plum	plums
+pomegranate	pomegranates
+potato	potatoes
+pumpkin	pumpkins
+quince	quinces
+radish	radishes
+raspberry	raspberries
+rutabaga	rutabagas
+sapote	sapotes
+shallot	shallots
+soybean	soybeans
+sprout	sprouts
+squash	squashes
+strawberry	strawberries
+sunflower seed	sunflower seeds
+sweet potato	sweet potatoes
+tangelo	tangelos
+tangerine	tangerines
+tomatillo	tomatillos
+tomato	tomatoes
+turnip	turnips
+walnut	walnuts
+watermelon	watermelons
+yam	yams
+zucchini	zucchini
