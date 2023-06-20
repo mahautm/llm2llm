@@ -120,7 +120,7 @@ def adjust_accelerate(acc_config_path, log_path, job_idx, n_gpus, n_nodes):
     """
     with open(acc_config_path, "r") as f:
         acc_config = yaml.safe_load(f)
-    acc_config["main_process_port"] = 7000 + job_idx
+    acc_config["main_process_port"] = 8000 + job_idx
     acc_config["num_processes"] = n_gpus
     acc_config["num_machines"] = n_nodes
     if hasattr(acc_config["deepspeed_config"], "deepspeed_config_file"):
@@ -185,7 +185,7 @@ def write_sbatch(
 #SBATCH --gres=gpu:{n_gpus}
 #SBATCH --qos={qos}
 #SBATCH --nodes=1##{n_nodes}
-#SBATCH --exclude=node044,node038,node039,node040,node042
+#SBATCH --exclude=node044,node040
 #SBATCH --nice=10
 #SBATCH --ntasks-per-node=1
 #SBATCH --time={time}

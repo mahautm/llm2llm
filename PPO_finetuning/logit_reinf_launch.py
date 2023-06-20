@@ -50,6 +50,7 @@ def main(config_args):
                     max_new_tokens=config_args.rl_script_args.max_new_tokens,
                     pad_token_id=pad_token,
                     do_sample=True,
+                    top_k=config_args.rl_script_args.top_k,
                 )
                 # Here introduce a function that looks for the stop word and replaces all lolgits after it with the pad token
             # logits should also be masked, as should values (or any other output)

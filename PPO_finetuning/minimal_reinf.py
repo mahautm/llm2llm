@@ -130,7 +130,7 @@ def main(config_args):
         weighted_kl_div = kl_div * config_args.rl_script_args.kl_loss_coeff
         # batch normalisation of advantage trick
         # adv = (adv - adv.mean()) / (adv.std() + 1e-12)
-        policy_loss = adv * log_probs
+        policy_loss = -adv * log_probs
         optimized_loss = (policy_loss - weighted_entropy + weighted_kl_div).mean()
 
         accelerator.backward(optimized_loss)

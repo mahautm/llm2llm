@@ -10,7 +10,7 @@ lamorel_args:
     num_machines: 1
   llm_args:
     model_type: causal
-    model_path: facebook/opt-6.7b
+    model_path: facebook/opt-350m
     pretrained: true
     minibatch_size: 1
     parallelism:
@@ -21,9 +21,9 @@ lamorel_args:
   updater_args:
 rl_script_args:
   path: /homedtcl/mmahaut/projects/lamorel/zoo/llm2llm/train.py
-  dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/boring_garden_randomized_train.txt
-  valid_dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/boring_garden_randomized_valid.txt
-  epochs: 10000
+  dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/mindless_dataset_randomized_train.txt
+  valid_dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/mindless_dataset_randomized_valid.txt
+  epochs: 100000
   validation_interval: 100
   steps_per_epoch: 2
   batch_size: 50
@@ -32,6 +32,7 @@ rl_script_args:
   lam: 0.99
   gamma: 0.9
   clip_ratio: 0.2
+  top_k: 10
   kl_loss_coeff: 0
   max_ep_len: 3
   lr: 1.0e-05
