@@ -281,6 +281,7 @@ def evaluate(
                 o,
                 max_new_tokens=max_new_tokens,
                 pad_token_id=pad_token,
+                # do_sample=True,
             )
         # Answer is still our stop token for evaluation
         if infos["turn"] == 0:
@@ -290,14 +291,14 @@ def evaluate(
                     if _cut_a != _a:
                         a["text"][i] = _cut_a + " Answer:"
             # get the gradients
-        accelerator.print(
-            f"Generated turn {infos['turn']}, max_new_tokens: {max_new_tokens}, eval_a: {a['text']}"
-        )
+        # accelerator.print(
+        #     f"Generated turn {infos['turn']}, max_new_tokens: {max_new_tokens}, eval_a: {a['text']}"
+        # )
 
         o, r, done, infos = venv.step(a["text"])
         if done:
             # log the reward
-            accelerator.print(f"Eval reward: {sum(r)/len(r)}, batch_size: {len(r)}")
+            accelerator.print(f">> >> Eval reward: {sum(r)/len(r)}, batch_size: {len(r)}")
 
             if log_file is not None:
                 with open(log_file, "a", encoding="utf-8") as f:
