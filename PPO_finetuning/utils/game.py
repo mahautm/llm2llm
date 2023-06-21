@@ -300,7 +300,7 @@ def evaluate(
             accelerator.print(f"Eval reward: {sum(r)/len(r)}, batch_size: {len(r)}")
 
             if log_file is not None:
-                with open(log_file, "a") as f:
+                with open(log_file, "a", encoding="utf-8") as f:
                     f.write(
                         f"Eval episode {n_episodes} - GPU {accelerator.device} - Acc {sum(r)/len(r)}\n"
                     )

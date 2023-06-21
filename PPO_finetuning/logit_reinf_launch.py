@@ -104,7 +104,7 @@ def main(config_args):
 
             if terminal:
                 # save and log
-                with open(config_args.rl_script_args.log_file, "a") as f:
+                with open(config_args.rl_script_args.log_file, "a", encoding="utf-8") as f:
                     f.write(
                         f"Episode {n_episodes} - GPU {accelerator.device} - Acc {ep_ret}/{len(o)}\n"
                     )

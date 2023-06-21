@@ -10,7 +10,7 @@ lamorel_args:
     num_machines: 1
   llm_args:
     model_type: causal
-    model_path: facebook/opt-6.7b
+    model_path: facebook/opt-350m
     pretrained: true
     minibatch_size: 1
     parallelism:
@@ -21,12 +21,12 @@ lamorel_args:
   updater_args:
 rl_script_args:
   path: /homedtcl/mmahaut/projects/lamorel/zoo/llm2llm/train.py
-  dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/boring_garden_randomized_train.txt
-  valid_dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/boring_garden_randomized_valid.txt
+  dataset_path: /shared_dir/llm2llm/data/boring_garden_randomized_train.txt
+  valid_dataset_path: /shared_dir/llm2llm/data/boring_garden_randomized_valid.txt
   epochs: 10000
   validation_interval: 100
   steps_per_epoch: 2
-  batch_size: 50
+  batch_size: 5
   max_new_tokens: 30
   ppo_epochs: 2
   lam: 0.99
@@ -50,5 +50,5 @@ rl_script_args:
   cohere_key: false
   affix_num_steps: null
   affixes: null
-  log_dir: /homedtcl/mmahaut/projects/llm2llm/fine_tune
-  log_file: /homedtcl/mmahaut/projects/llm2llm/fine_tune/diaLogOPT.txt
+  log_dir: fine_tune
+  log_file: fine_tune/diaLogOPT.txt

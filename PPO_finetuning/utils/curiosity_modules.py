@@ -1,6 +1,6 @@
 from torch import nn
 import torch
-from lamorel import BaseModuleFunction
+#from lamorel import BaseModuleFunction
 
 
 class CuriosityModule(nn.Module):  # (BaseModuleFunction):
