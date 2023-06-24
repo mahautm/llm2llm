@@ -217,7 +217,7 @@ def main(config_args):
                     weighted_value_loss = torch.zeros_like(val)
                 # batch normalisation of advantage trick
                 # adv = (adv - adv.mean()) / (adv.std() + 1e-12)
-                policy_loss = adv * log_probs
+                policy_loss = -adv * log_probs
                 optimized_loss = (
                     policy_loss
                     - weighted_entropy

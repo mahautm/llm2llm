@@ -66,6 +66,20 @@ class LLMComEnvText(gym.Env):
             return self.batch[0]  # question
         else:
             return [self.affix[0][0] + b + self.affix[0][1] for b in self.batch[0]]
+    
+    def soft_reset(self):
+        # we keep the observation o from before, and do not require a new initial sample.
+        # nonetheless, we need the environment to behave as if it was a new sample
+        # this soft reset is done by setting the number of turns to 0
+        self.turn = 0
+        self.done = False
+        self.logs = {
+            "question": self.batch[0],
+            "context": self.batch[1],
+            "answer": self.batch[2],
+            "llm1_response": [],
+            "llm2_response": [],
+        }
 
     def step(self, action):
         # actions are  a list of strings
@@ -86,7 +100,8 @@ class LLMComEnvText(gym.Env):
                     int(f" {self.batch[2][i].lower()} " in _act.lower())
                     for i, _act in enumerate(action)
                 ]
-                return [None] * len(action), reward, True, {"turn": self.turn}
+                self.done = True
+                return [None] * len(action), reward, self.done, {"turn": self.turn}
 
             # send the response to the llm and get a new question
             # combine the context and the action strings for each input, add suffix and prefix if needed

@@ -233,7 +233,7 @@ def init_game(config_args, accelerator):
             warmup_min_lr=config_args.rl_script_args.lr_warmup_min,
             warmup_max_lr=config_args.rl_script_args.lr_warmup_max,
             total_num_steps=config_args.rl_script_args.epochs
-            * config_args.rl_script_args.ppo_epochs,
+            * config_args.rl_script_args.ppo_updates,
         )
         if config_args.rl_script_args.lr_warmup_steps != 0
         else None

@@ -77,16 +77,16 @@ if __name__ == "__main__":
                     )
                 random.shuffle(list_of_statements)
 
-                print(
-                    question
-                    + " \t"
-                    + ", ".join(list_of_statements)
-                    + " \t"
-                    + str(quantity)
-                    + " \t"
-                    + adj
-                    + "\n"
-                )
+                # print(
+                #     question
+                #     + " \t"
+                #     + ", ".join(list_of_statements)
+                #     + " \t"
+                #     + num2words(quantity)
+                #     + " \t"
+                #     + adj
+                #     + "\n"
+                # )
 
                 # output to file
                 with open(outfilename, "a") as f:
@@ -95,7 +95,7 @@ if __name__ == "__main__":
                         + " \t"
                         + ", ".join(list_of_statements)
                         + " \t"
-                        + str(quantity)
+                        + num2words(quantity)
                         + " \t"
                         + adj
                         + "\n"

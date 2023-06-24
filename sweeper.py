@@ -192,9 +192,9 @@ def write_sbatch(
 #SBATCH --output={log_path}/%j.out
 #SBATCH --error={log_path}/%j.err
 
-source /homedtic/mmahaut/.bashrc
+source ~/.bashrc
 conda activate llm2llm
-module load CUDA/11.4.3
+#module load CUDA/11.4.3
 
 # python -m lamorel_launcher.launch --config-path {log_path} --config-name config rl_script_args.path={script_path}
 NCCL_P2P_DISABLE='1' PATH=$PATH NCCL_IB_DISABLE='1' accelerate launch --config_file={log_path / 'accelerate_config.yaml'} {script_path} --config-path={log_path} --config-name='config'

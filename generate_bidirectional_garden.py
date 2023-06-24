@@ -96,7 +96,7 @@ if __name__ == "__main__":
                             + " \t"
                             + ", ".join(list_context_llm2)
                             + " \t"
-                            + str(quantity)
+                            + num2words(quantity)
                             + " \t"
                             + adj
                             + "\n"
