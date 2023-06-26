@@ -1,23 +1,51 @@
-value_loss_coef:
-  - 0.1
+clip_eps:
+  - 0.3
 ce_coef:
-  - 0.1
-entropy_coef:
-  - 0.1
+  - 0
+cur2_coef: 
+  - 0.9
+cur_coef:
+  - 0
+score_coef:
+  - 0
+  - 1
+  - 10
+entropy_loss_coef:
+  - 0
+value_loss_coef:
+  - 0
+kl_loss_coeff:
+  - 0
+  - 1
+top_k:
+  - 500
+lr:
+  - 5.0e-05
+lr_warmup_min:
+  - 0
+lr_warmup_max:
+  - 1
+lr_warmup_steps:
+  - 200
+lora_r: 
+  - 16
+gamma:
+  - 1
+cohere_key:
+  - false
+affix_num_steps:
+  - null
 affixes:
   -
     - 
-      - "O: "
-      - "Me: "
+      - "Goal: How many green items does the other person have? You: How\
+      \ many green items do you have? Answer: Eight. You: Eight.\n\
+      \ Goal: How many blue items does the other person have? You: How many blue items\
+      \ do you have? Answer: Two. You: Two. \nGoal: How many red items does the\
+      \ other person have? You: How many red items do you have? Answer: Sixteen.\
+      \ You: Sixteen.\nGoal:"
+      - "You:"
     -
-      - "Me: "
-      - "O: "
-      - "Me: "
-  -
-    - 
-      - "Received: "
-      - "Send: "
-    -
-      - "Received: "
-      - "Received: "
-      - "Send: "
+      - ""
+      - ""
+      - ""

@@ -11,5 +11,11 @@ setup(
         "torch",
         "adapter-transformers",
         "pandas",
-    ],  # external packages as dependencies
+		"deepspeed",
+		"scipy",
+		"cohere",
+		"gym",
+		"peft",
+		"hydra-core",
+        ],  # external packages as dependencies
 )
