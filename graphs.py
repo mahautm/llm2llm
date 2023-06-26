@@ -65,7 +65,7 @@ def extract_data_from_line(line, metric):
     # format : Episode 2 --> Acc: 0/100 Reward: 6.030714985172381e-07
     if metric in line:
         # extract the first float folowing the metric
-        _m = re.search(f"{metric}:\s+([-+]?\d+\.\d+[eE]?[+\-]?\d*)", line)
+        _m = re.search(f"{metric}:\s+([-+]?\d+\.?\d+?[eE]?[+\-]?\d*)", line)
         if _m is None:
             _m = re.search(f"{metric} =\s+([-+]?\d+\.\d+[eE]?[+\-]?\d*)", line)
             if _m is None:

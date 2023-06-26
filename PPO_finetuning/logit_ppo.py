@@ -39,6 +39,7 @@ def generate_samples(env, o, froz_model, wmodel, config_args, accelerator, pad_t
     d = False
     while not d:
         with torch.no_grad():
+            assert None not in o, f"None in o, infos: {infos}, o: {o}, env.logs: {env.logs}"
             a = wmodel.generate(
                 o,
                 max_new_tokens=config_args.rl_script_args.max_new_tokens,
@@ -229,15 +230,22 @@ def main(config_args):
             # compute advantage
             ppo_adv = ppo_ret - ppo_val
             # pad ppo_logits to match logits
-            ppo_logits = torch.functional.F.pad(
+            pad_ppo_logits = torch.functional.F.pad(
                 ppo_logits,
-                (0, logits.shape[1] - ppo_logits.shape[1], 0, 0),
+                (0, 0,logits.shape[1] - ppo_logits.shape[1], 0),
+                "constant",
+                0,
+            )
+            # TODO: test the ppo_adv padding 
+            ppo_adv = torch.functional.F.pad(
+                ppo_adv,
+                (logits.shape[1] - ppo_adv.shape[1], 0, 0, 0),
                 "constant",
                 0,
             )
             # compute ratio
             ratio = torch.exp(
-                ppo_logits.log_softmax(-1).gather(
+                pad_ppo_logits.log_softmax(-1).gather(
                     dim=2, index=seq.unsqueeze(2)
                 ).squeeze()
                 - logits.log_softmax(-1).gather(
