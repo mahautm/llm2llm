@@ -1,4 +1,17 @@
-# in this one I'm doing logit per logit rewards
+# Calls PPO to train a language model to earn rewards from a given environment
+# Update from previous versions:
+#   Provides per token rewards and loss
+#   Each step is ppo-constrained to never be too far from the previous one
+#   Each token is also constrained to be close to the original language model (kl divergence)
+# Requires
+#   game.py, which loads models and environment (game may use deepspeed, which is why we launch with accelerate)
+#   utils.tools.py for some operations (discounted cumulative reward)
+#   config file in yaml format to set all parameters (see local_gpu_config.yaml for an example)
+#
+# example call: 
+# NCCL_P2P_DISABLE='1' NCCL_IB_DISABLE='1' accelerate launch --config_file=/shared_dir/exps/boring_auxiliary3/4/accelerate_config.yaml PPO_finetuning/logit_ppo.py --config-path=/shared_dir/exps/boring_auxiliary3/4 --config-name='config'
+# Another way to call is to use sweeper.py to go through a grid of hyperparameters
+
 from utils.tools import scores_to_proba_dists, pad_merge, discount_cumsum
 from utils.game import init_game, evaluate
 from accelerate import Accelerator
@@ -12,6 +25,7 @@ import copy
 
 # Accelerate
 accelerator = Accelerator()
+
 def generate_samples(env, o, froz_model, wmodel, config_args, accelerator, pad_token, epoch, av_val, nvals, verbose=False):
     # Prepare for interaction with environment
     ep_ret, ep_len, infos = 0, 0, {"turn": 0}
@@ -106,18 +120,19 @@ def format_data(config_args, accelerator, pad_token, old_logits, logits, old_klo
     # TODO: all pad tokens should be ignored and therefore replaced by ones in the logits?
 
     # now we compute the auxiliary loss, that assigns a reward equal to the probability of the correct answer being the first token
+    # TODO: this score function should go in the model (Str2Str in game.py)
     r = torch.tensor(r, device=accelerator.device).float()
     if config_args.rl_script_args.score_coef != 0:
         mask = torch.zeros_like(logits)
         # detect pad tokens
-        mask[logits.argmax(2) == pad_token] = 1
-        print("mask", mask.sum())
+        mask[logits.argmax(2) != 0] = 1
+        print("mask", mask.sum(), pad_token)
         # keep only as many non-pad tokenas as there are in the answer
         mask = mask.cumsum(1)
         mask[mask > ans_tokens.shape[0]] = 0
         print(ans_tokens.shape[1], "mask", mask.sum())
         # keep only non 0 values from masked logits
-        mask = mask * logits
+        mask = mask * logits.softmax(2)
         # reduce dimension to non-pad tokens
         mask = mask.sum(1)
         print("mask", mask.sum())
@@ -213,6 +228,13 @@ def main(config_args):
             ppo_logits, ppo_klogits, ppo_seq, ppo_val, ppo_ret, _, _ = generate_samples(env, copy.deepcopy(o), froz_model, wmodel, config_args, accelerator, pad_token, epoch, av_val, nvals)
             # compute advantage
             ppo_adv = ppo_ret - ppo_val
+            # pad ppo_logits to match logits
+            ppo_logits = torch.functional.F.pad(
+                ppo_logits,
+                (0, logits.shape[1] - ppo_logits.shape[1], 0, 0),
+                "constant",
+                0,
+            )
             # compute ratio
             ratio = torch.exp(
                 ppo_logits.log_softmax(-1).gather(
@@ -279,7 +301,7 @@ def main(config_args):
             if lr_scheduler is not None:
                 lr_scheduler.step()
             # log
-            log = f"return: {ret.mean().item()} - val: {val.mean().item()} - advantage: {ppo_adv.mean()} - policy_loss: {policy_loss.mean().item()} - entropy: {entropy.mean().item()} - weighted_entropy: {weighted_entropy.mean().item()} - weighted_value_loss: {weighted_value_loss.mean().item()} - weighted_kl_div: {weighted_kl_div.mean().item()} - kl_div: {kl_div.mean().item()} - lr: {optimizer.param_groups[0]['lr']} - optimized_loss: {optimized_loss.mean().item()}"
+            log = f"return: {ret.mean().item()} - val: {val.mean().item()} - advantage: {ppo_adv.mean()} - policy_loss: {policy_loss.mean().item()} - entropy: {entropy.mean().item()} - weighted_entropy: {weighted_entropy.mean().item()} - weighted_value_loss: {weighted_value_loss.mean().item()} - weighted_kl_div: {weighted_kl_div.mean().item()} - kl_div: {kl_div.mean().item()} - lr: {optimizer.param_groups[0]['lr']} - optimized_loss: {optimized_loss.mean().item()} - ratio: {ratio.mean().item()} - surr1: {surr1.mean().item()} - surr2: {surr2.mean().item()} - ppo_adv: {ppo_adv.mean().item()}"
             if config_args.rl_script_args.cur_coef != 0:
                 log += f" - curiosity: {curiosity_loss.mean().item()}"
             accelerator.print(log)

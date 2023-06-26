@@ -1,9 +1,6 @@
 lamorel_args:
   log_level: info
   allow_subgraph_use_whith_gradient: true
-  distributed_setup_args:
-    n_rl_processes: 1
-    n_llm_processes: 1
   accelerate_args:
     config_file: /homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/accelerate/default_accelerate.yaml
     machine_rank: 0
@@ -12,13 +9,6 @@ lamorel_args:
     model_type: causal
     model_path: facebook/opt-350m
     pretrained: true
-    minibatch_size: 1
-    parallelism:
-      use_gpu: true
-      model_parallelism_size: 1
-      synchronize_gpus_after_scoring: false
-      empty_cuda_cache_after_scoring: false
-  updater_args:
 rl_script_args:
   path: /homedtcl/mmahaut/projects/lamorel/zoo/llm2llm/train.py
   dataset_path: /shared_dir/llm2llm/data/boring_garden_randomized_train.txt
