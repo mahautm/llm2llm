@@ -15,7 +15,7 @@ class FruitDataset(Dataset):
 
     def __getitem__(self, item):
         return (
-            self.data[1][item].replace("network", "person", 1).capitalize(),  # question
-            self.data[0][item].capitalize(),  # context
+            self.data[0][item].replace("network", "person", 1).capitalize(),  # context
+            self.data[1][item].capitalize(),  # question
             self.data[2][item].capitalize(),  # answer
         )

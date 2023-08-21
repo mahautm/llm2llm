@@ -111,7 +111,7 @@ def plot_data(
 
 def plot_data_from_exp(
     exp_name=None,
-    exp_path="/homedtcl/mmahaut/projects/llm2llm/experiments",
+    exp_path="/home/mmahaut/projects/llm2llm/experiments",
     config_name="params.yaml",
     metric="Reward",
     hue=None,

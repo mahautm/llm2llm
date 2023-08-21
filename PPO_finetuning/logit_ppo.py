@@ -8,7 +8,7 @@
 #   utils.tools.py for some operations (discounted cumulative reward)
 #   config file in yaml format to set all parameters (see local_gpu_config.yaml for an example)
 #
-# example call: 
+# example call:
 # NCCL_P2P_DISABLE='1' NCCL_IB_DISABLE='1' accelerate launch --config_file=/shared_dir/exps/boring_auxiliary3/4/accelerate_config.yaml PPO_finetuning/logit_ppo.py --config-path=/shared_dir/exps/boring_auxiliary3/4 --config-name='config'
 # Another way to call is to use sweeper.py to go through a grid of hyperparameters
 
@@ -26,7 +26,38 @@ import copy
 # Accelerate
 accelerator = Accelerator()
 
-def generate_samples(env, o, froz_model, wmodel, config_args, accelerator, pad_token, epoch, av_val, nvals, verbose=False):
+
+class DynamicVariable:
+    def __init__(self, val, step_size, max):
+        self.val = val
+        self.max = max
+        self.i = 0
+        self.step_size = step_size
+
+    def set(self, val):
+        self.val = val
+
+    def step(self):
+        if self.i < self.max and self.i % self.step_size == 0:
+            self.val += 1
+
+    def get(self):
+        return self.val
+
+
+def generate_samples(
+    env,
+    o,
+    wmodel,
+    config_args,
+    accelerator,
+    pad_token,
+    epoch,
+    av_val,
+    nvals,
+    max_new_tokens,
+    verbose=False,
+):
     # Prepare for interaction with environment
     ep_ret, ep_len, infos = 0, 0, {"turn": 0}
     # Main loop: collect experience in env and update/log each epoch
@@ -39,10 +70,12 @@ def generate_samples(env, o, froz_model, wmodel, config_args, accelerator, pad_t
     d = False
     while not d:
         with torch.no_grad():
-            assert None not in o, f"None in o, infos: {infos}, o: {o}, env.logs: {env.logs}"
+            assert (
+                None not in o
+            ), f"None in o, infos: {infos}, o: {o}, env.logs: {env.logs}"
             a = wmodel.generate(
                 o,
-                max_new_tokens=config_args.rl_script_args.max_new_tokens,
+                max_new_tokens=max_new_tokens,
                 pad_token_id=pad_token,
                 do_sample=True,
                 top_k=config_args.rl_script_args.top_k,
@@ -57,14 +90,15 @@ def generate_samples(env, o, froz_model, wmodel, config_args, accelerator, pad_t
                         a["text"][i] = _cut_a + " Answer:"
             # get the gradients
         out = wmodel(a["text"], return_sequences=True)
-        _max_size = min(
-            config_args.rl_script_args.max_new_tokens, out["logits"].shape[1]
-        )
+
+        _max_size = min(max_new_tokens, out["logits"].shape[1])
         logits = out["logits"][:, :_max_size, :]
         seq = out["sequences"][:, :_max_size]
         # introducing kl_divergence to original model (& NOT to last iteration -- that way we do not stray too far from natural language)
         with torch.no_grad():
-            klogits = froz_model(a["text"])["logits"][:, :_max_size, :]
+            wmodel.disable_adapter_layers()
+            klogits = wmodel(a["text"])["logits"][:, :_max_size, :]
+            wmodel.enable_adapter_layers()
         accelerator.print(
             f"Generated turn {infos['turn']}, max_new_tokens: {_max_size}, a: {a['text']} expected: {env.batch[2]}"
         )
@@ -85,7 +119,7 @@ def generate_samples(env, o, froz_model, wmodel, config_args, accelerator, pad_t
                 # TODO: check size
                 old_val = a["value"][:, : old_logits.shape[1]].squeeze()
             else:
-                old_val=None
+                old_val = None
             # curiosity isn't initially computed. This is uncortunately due to sentence based curiosity and should be completely reframed
             # no intermediate reward
             # second part of the conversation has access to entire history
@@ -95,12 +129,32 @@ def generate_samples(env, o, froz_model, wmodel, config_args, accelerator, pad_t
             else:
                 o = [o[i] + a["text"][i] + new_o[i] for i in range(len(o))]
     if config_args.rl_script_args.value_loss_coef != 0:
-        val =  a["value"][:, : old_logits.shape[1]].squeeze()
+        val = a["value"][:, : old_logits.shape[1]].squeeze()
     else:
         val = None
-    ans_tokens = wmodel.tokenizer(env.batch[2], return_tensors="pt", padding=True)["input_ids"].squeeze().to(accelerator.device)
-    logits, klogits, seq, val, ret, av_val, nvals= format_data(config_args, accelerator, pad_token, old_logits, logits, old_klogits, klogits, old_seq, seq, old_val, val, r, ans_tokens, av_val, nvals)
-    
+    ans_tokens = (
+        wmodel.tokenizer(env.batch[2], return_tensors="pt", padding=True)["input_ids"]
+        .squeeze()
+        .to(accelerator.device)
+    )
+    logits, klogits, seq, val, ret, av_val, nvals = format_data(
+        config_args,
+        accelerator,
+        pad_token,
+        old_logits,
+        logits,
+        old_klogits,
+        klogits,
+        old_seq,
+        seq,
+        old_val,
+        val,
+        r,
+        ans_tokens,
+        av_val,
+        nvals,
+    )
+
     if verbose:
         # save and log
         with open(config_args.rl_script_args.log_file, "a", encoding="utf-8") as f:
@@ -115,7 +169,24 @@ def generate_samples(env, o, froz_model, wmodel, config_args, accelerator, pad_t
         )
     return logits, klogits, seq, val, ret, av_val, nvals
 
-def format_data(config_args, accelerator, pad_token, old_logits, logits, old_klogits, klogits, old_seq, seq, old_val, val, r, ans_tokens, av_val, nvals):
+
+def format_data(
+    config_args,
+    accelerator,
+    pad_token,
+    old_logits,
+    logits,
+    old_klogits,
+    klogits,
+    old_seq,
+    seq,
+    old_val,
+    val,
+    r,
+    ans_tokens,
+    av_val,
+    nvals,
+):
     # prepare data for loss
     # prepare logits
     # TODO: all pad tokens should be ignored and therefore replaced by ones in the logits?
@@ -133,7 +204,7 @@ def format_data(config_args, accelerator, pad_token, old_logits, logits, old_klo
         mask[mask > ans_tokens.shape[0]] = 0
         print(ans_tokens.shape[1], "mask", mask.sum())
         # keep only non 0 values from masked logits
-        mask = mask * logits.softmax(2)
+        mask = mask * logits.log_softmax(-1)
         # reduce dimension to non-pad tokens
         mask = mask.sum(1)
         print("mask", mask.sum())
@@ -202,69 +273,100 @@ def format_data(config_args, accelerator, pad_token, old_logits, logits, old_klo
         ret = ret + cur * config_args.rl_script_args.cur_coef
     return logits, klogits, seq, val, ret, av_val, nvals
 
+
 @hydra.main(
     config_path="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning",
     config_name="local_gpu_config",
     version_base="1.1",
 )
 def main(config_args):
-    froz_model, wmodel, env, venv, optimizer, lr_scheduler, _, pad_token = init_game(
+    wmodel, env, venv, optimizer, lr_scheduler, _, pad_token = init_game(
         config_args, accelerator
     )
-    space_token = 1437 # hard coded attempt at making the space token less important - kicks in at opt-350m-fromin
+    space_token = 1437  # hard coded attempt at making the space token less important - kicks in at opt-350m-fromin
     # instead of a critic REINFORCE can use as a baseline the average of previous returns
     if config_args.rl_script_args.value_loss_coef == 0:
         av_val = 0
         nvals = 1
+
+    max_new_tokens = DynamicVariable(20, 500, config_args.rl_script_args.max_new_tokens)
     for epoch in range(config_args.rl_script_args.epochs):
         # reset
         o = env.reset()
         with torch.no_grad():
-            logits, klogits, seq, val, ret, av_val, nvals = generate_samples(env, copy.deepcopy(o), froz_model, wmodel, config_args, accelerator, pad_token, epoch, av_val, nvals, verbose=True)
+            logits, klogits, seq, val, ret, av_val, nvals = generate_samples(
+                env,
+                copy.deepcopy(o),
+                wmodel,
+                config_args,
+                accelerator,
+                pad_token,
+                epoch,
+                av_val,
+                nvals,
+                verbose=True,
+                max_new_tokens=max_new_tokens.get(),
+            )
 
         # Perform PPO update!
         for ppo_update in range(config_args.rl_script_args.ppo_updates):
             env.soft_reset()
             # compute new log_probs
-            ppo_logits, ppo_klogits, ppo_seq, ppo_val, ppo_ret, _, _ = generate_samples(env, copy.deepcopy(o), froz_model, wmodel, config_args, accelerator, pad_token, epoch, av_val, nvals)
+            ppo_logits, ppo_klogits, _, ppo_val, ppo_ret, _, _ = generate_samples(
+                env,
+                copy.deepcopy(o),
+                wmodel,
+                config_args,
+                accelerator,
+                pad_token,
+                epoch,
+                av_val,
+                nvals,
+                max_new_tokens=max_new_tokens.get(),
+            )
             # compute advantage
             ppo_adv = ppo_ret - ppo_val
             # pad ppo_logits to match logits
-            pad_ppo_logits = torch.functional.F.pad(
+            ppo_logits = torch.functional.F.pad(
                 ppo_logits,
-                (0, 0,logits.shape[1] - ppo_logits.shape[1], 0),
+                (0, 0, logits.shape[1] - ppo_logits.shape[1], 0),
                 "constant",
                 0,
             )
-            # TODO: test the ppo_adv padding 
             ppo_adv = torch.functional.F.pad(
                 ppo_adv,
                 (logits.shape[1] - ppo_adv.shape[1], 0, 0, 0),
                 "constant",
                 0,
             )
+            ppo_klogits = torch.functional.F.pad(
+                ppo_klogits,
+                (0, 0, logits.shape[1] - ppo_klogits.shape[1], 0),
+                "constant",
+                0,
+            )
             # compute ratio
             ratio = torch.exp(
-                pad_ppo_logits.log_softmax(-1).gather(
-                    dim=2, index=seq.unsqueeze(2)
-                ).squeeze()
-                - logits.log_softmax(-1).gather(
-                    dim=2, index=seq.unsqueeze(2)
-                ).squeeze()
+                ppo_logits.log_softmax(-1)
+                .gather(dim=2, index=seq.unsqueeze(2))
+                .squeeze()
+                - logits.log_softmax(-1).gather(dim=2, index=seq.unsqueeze(2)).squeeze()
             )
             # compute surrogate loss
             surr1 = ratio * ppo_adv
             surr2 = (
-                torch.clamp(ratio, 1 - config_args.rl_script_args.clip_eps, 1 + config_args.rl_script_args.clip_eps)
+                torch.clamp(
+                    ratio,
+                    1 - config_args.rl_script_args.clip_eps,
+                    1 + config_args.rl_script_args.clip_eps,
+                )
                 * ppo_adv
             )
             policy_loss = -torch.min(surr1, surr2).mean()
             dist = Categorical(logits=ppo_logits)
             entropy = dist.entropy()
-            weighted_entropy = (
-                entropy * config_args.rl_script_args.entropy_loss_coef
-            )
-            # lets calculate the KL divergence between the original (froz_model) and new policies
+            weighted_entropy = entropy * config_args.rl_script_args.entropy_loss_coef
+            # lets calculate the KL divergence between the original (lora_model.disable_adapter_layers) and new policies
             kl_div = torch.nn.functional.kl_div(
                 ppo_logits.log_softmax(-1),
                 ppo_klogits.log_softmax(-1),
@@ -294,10 +396,7 @@ def main(config_args):
             # batch normalisation of advantage trick
             # adv = (adv - adv.mean()) / (adv.std() + 1e-12)
             optimized_loss = (
-                policy_loss
-                - weighted_entropy
-                + weighted_value_loss
-                + weighted_kl_div
+                policy_loss - weighted_entropy + weighted_value_loss + weighted_kl_div
             ).mean()
             if config_args.rl_script_args.cur_coef:
                 curiosity_loss = wmodel.curiosity_module.get_loss()
@@ -305,6 +404,7 @@ def main(config_args):
 
             accelerator.backward(optimized_loss)
             optimizer.step()
+            max_new_tokens.step()
             optimizer.zero_grad()
             if lr_scheduler is not None:
                 lr_scheduler.step()

@@ -3,7 +3,7 @@ PPO implementation taken from https://github.com/openai/spinningup
 """
 import numpy as np
 import torch
-from utils.tools import discount_cumsum, combined_shape
+from llm2llm.PPO_finetuning.utils.tools import discount_cumsum, combined_shape
 
 
 class PPOBuffer:

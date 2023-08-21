@@ -6,7 +6,7 @@ from pathlib import Path
 import argparse
 from time import sleep
 
-default_checkpoint_dir = "/homedtcl/mmahaut/projects/experiments"
+default_checkpoint_dir = "/home/mmahaut/projects/experiments"
 
 
 def get_opts(arguments):
@@ -20,25 +20,25 @@ def get_opts(arguments):
     arg_parser.add_argument(
         "--script_path",
         type=str,
-        default="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/hf_acc_launch.py",
+        default="/gpfs/home/mmahaut/projects/llm2llm/PPO_finetuning/logit_ppo.py",
         help="path to the yaml file containing the parameters to sweep through",
     )
     arg_parser.add_argument(
         "--log_path",
         type=str,
-        default="/homedtcl/mmahaut/projects/llm2llm/experiments",
+        default="/gpfs/home/mmahaut/projects/llm2llm/experiments",
         help="path where everything will be saved",
     )
     arg_parser.add_argument(
         "--default_params_path",
         type=str,
-        default="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/local_gpu_config.yaml",
+        default="/gpfs/home/mmahaut/projects/llm2llm/PPO_finetuning/local_gpu_config.yaml",
         help="path to the yaml file containing the default parameters",
     )
     arg_parser.add_argument(
         "--memory",
         type=str,
-        default="500G",
+        default="100G",
         help="assigned memory in GB",
     )
     arg_parser.add_argument(
@@ -50,7 +50,7 @@ def get_opts(arguments):
     arg_parser.add_argument(
         "--sbatch_dir",
         type=str,
-        default="/homedtcl/mmahaut/projects/manual_slurm",
+        default="/gpfs/home/mmahaut/projects/manual_slurm",
         help="path to the directory where the sbatch file is stored",
     )
     arg_parser.add_argument(
@@ -75,7 +75,7 @@ def get_opts(arguments):
     arg_parser.add_argument(
         "--acc_config_path",
         type=str,
-        default="/homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/accelerate/default_accelerate.yaml",
+        default="/gpfs/home/mmahaut/projects/llm2llm/PPO_finetuning/accelerate/default_accelerate.yaml",
         help="path to the accelerate config file",
     )
 
@@ -120,7 +120,7 @@ def adjust_accelerate(acc_config_path, log_path, job_idx, n_gpus, n_nodes):
     """
     with open(acc_config_path, "r") as f:
         acc_config = yaml.safe_load(f)
-    acc_config["main_process_port"] = 6000 + job_idx
+    acc_config["main_process_port"] = 7000 + job_idx
     acc_config["num_processes"] = n_gpus
     acc_config["num_machines"] = n_nodes
     if hasattr(acc_config["deepspeed_config"], "deepspeed_config_file"):
@@ -195,7 +195,7 @@ def write_sbatch(
 
 source ~/.bashrc
 conda activate llm2llm
-#module load CUDA/11.4.3
+module load CUDA/11.4.3
 
 # python -m lamorel_launcher.launch --config-path {log_path} --config-name config rl_script_args.path={script_path}
 NCCL_P2P_DISABLE='1' PATH=$PATH NCCL_IB_DISABLE='1' accelerate launch --config_file={log_path / 'accelerate_config.yaml'} {script_path} --config-path={log_path} --config-name='config'

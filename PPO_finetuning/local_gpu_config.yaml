@@ -2,32 +2,31 @@ lamorel_args:
   log_level: info
   allow_subgraph_use_whith_gradient: true
   accelerate_args:
-    config_file: /homedtcl/mmahaut/projects/llm2llm/PPO_finetuning/accelerate/default_accelerate.yaml
+    config_file: /home/mmahaut/projects/llm2llm/PPO_finetuning/accelerate/default_accelerate.yaml
     machine_rank: 0
     num_machines: 1
   llm_args:
     model_type: causal
-    model_path: facebook/opt-350m
+    model_path: facebook/opt-125m
     pretrained: true
     n_gpus: 1
 rl_script_args:
-  path: /homedtcl/mmahaut/projects/lamorel/zoo/llm2llm/train.py
-  dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/boring_garden_randomized_train.txt
-  valid_dataset_path: /homedtcl/mmahaut/projects/llm2llm/data/boring_garden_randomized_valid.txt
-  epochs: 10000
+  path: /gpfs/home/mmahaut/projects/lamorel/zoo/llm2llm/train.py
+  dataset_path: /gpfs/home/mmahaut/projects/llm2llm/data/boring_garden_randomized_train.txt
+  valid_dataset_path: /gpfs/home/mmahaut/projects/llm2llm/data/boring_garden_randomized_valid.txt
+  epochs: 1000000
   validation_interval: 100
   steps_per_epoch: 2
-  batch_size: 50
-  max_new_tokens: 30
-  top_k: 5
+  batch_size: 1
+  max_new_tokens: 5
+  top_k: 500
   ppo_updates: 10
   lam: 0.99
   gamma: 0.9
   clip_ratio: 0.2
-  top_k: 10
   kl_loss_coeff: 0
   max_ep_len: 3
-  lr: 1.0e-05
+  lr: 1.0e-04
   lr_warmup_steps: 2000
   lr_warmup_max: 1
   lr_warmup_min: 0

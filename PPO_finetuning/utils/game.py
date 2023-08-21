@@ -9,7 +9,13 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from llm_com_env_text import LLMComEnvText
 from utils.ppo_buffer import PPOBuffer
 from accelerate.utils import DummyOptim, DummyScheduler
-from peft import get_peft_config, get_peft_model, LoraConfig, TaskType
+from peft import (
+    get_peft_config,
+    get_peft_model,
+    LoraConfig,
+    TaskType,
+    prepare_model_for_int8_training,
+)
 
 
 class CohereWrapper:
@@ -33,14 +39,24 @@ class CastOutputToFloat(torch.nn.Sequential):
 class StrToStrWrapper(torch.nn.Module):
     # create an str to str model wrapper
     def __init__(
-        self, model, tokenizer, accelerator, critic=None, curiosity_module=None
+        self,
+        model,
+        tokenizer,
+        accelerator,
+        critic=None,
+        curiosity_module=None,
+        disable_adapters=False,
     ):
+        """
+        disable_adapters: if True, the model's adapters are disabled when forwarding, before being re-enabled
+        """
         super().__init__()
         self.model = model
         self.tokenizer = tokenizer
         self.critic = critic
         self.curiosity_module = curiosity_module
         self.accelerator = accelerator
+        self.disable_adapters = disable_adapters
 
     def prepare_inputs(self, inputs):
         inputs = self.tokenizer(inputs, return_tensors="pt", padding=True)
@@ -48,11 +64,28 @@ class StrToStrWrapper(torch.nn.Module):
             inputs[k] = v.to(self.accelerator.device)
         return inputs
 
-    def forward(self, inputs, return_sequences=False, **kwargs):
+    def forward(
+        self, inputs=None, return_sequences=False, return_embeddings=False, **kwargs
+    ):
         inputs = self.prepare_inputs(inputs)
+        if self.disable_adapters:
+            self.model.disable_adapter_layers()
         output = self.model(**inputs, **kwargs)
+        if self.disable_adapters:
+            self.model.enable_adapter_layers()
         if return_sequences:
             output["sequences"] = inputs["input_ids"]
+        if return_embeddings:
+            if not hasattr(self, "log_to_emb"):
+                self.log_to_emb = torch.nn.Linear(
+                    model.model.decoder.embed_tokens.weight.shape[1],
+                    model.model.decoder.embed_tokens.weight.shape[0],
+                )
+                log_to_emb.weight.data = (
+                    model.model.model.decoder.embed_tokens.weight.data.T
+                )
+                log_to_emb.bias = None
+            output["embeddings"] = self.log_to_emb(output["logits"])
         return output
 
     def save_pretrained(self, save_directory):
@@ -107,13 +140,14 @@ class StrToStrWrapper(torch.nn.Module):
             "inputs['input_ids']",
             inputs["input_ids"].shape,
         )
+        text = self.tokenizer.batch_decode(
+            output.sequences[
+                :, inputs["input_ids"].shape[1] :
+            ],  # check if a -1 is required
+            skip_special_tokens=True,
+        )
         result = {
-            "text": self.tokenizer.batch_decode(
-                output.sequences[
-                    :, inputs["input_ids"].shape[1] :
-                ],  # check if a -1 is required
-                skip_special_tokens=True,
-            ),
+            "text": text if text is not None else [],
             "logits": _out_logs.swapaxes(0, 1),
             "out_sequence": output.sequences[:, inputs["input_ids"].shape[1] :],
             # "out_hs": _out_hs.to(torch.float32),
@@ -150,9 +184,8 @@ def init_game(config_args, accelerator):
     accelerator.print(f"Creating {model_path} agent...")
     # with init_empty_weights:
     model = AutoModelForCausalLM.from_pretrained(model_path)
-    fmodel = AutoModelForCausalLM.from_pretrained(
-        model_path
-    )  # probably not optimal. for kl
+    model = prepare_model_for_int8_training(model)
+
     for param in model.parameters():
         param.requires_grad = False  # freeze the model - train adapters later
         if param.ndim == 1:
@@ -177,7 +210,31 @@ def init_game(config_args, accelerator):
         if config_args.rl_script_args.value_loss_coef != 0
         else None
     )
-    # Instantiate environment with non LoRa, untrained LLM
+
+    accelerator.print(f"Done. Adding LoRa to {model_path} agent...")
+    peft_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        inference_mode=False,
+        r=4,  # config_args.rl_script_args.lora_r,
+        lora_alpha=32,
+        lora_dropout=0,
+    )
+    lora_model = get_peft_model(model, peft_config)
+    lora_model.print_trainable_parameters()
+    # wrap the LoRa model
+    wmodel = StrToStrWrapper(lora_model, tokenizer, accelerator, critic, c_module)
+
+    optimizer = DummyOptim(wmodel.parameters(), lr=config_args.rl_script_args.lr)
+    # optimizer graveyard, rip
+    # optimizer = deepspeed.ops.adam.DeepSpeedCPUAdam(
+    #     wmodel.parameters(), lr=config_args.rl_script_args.lr
+    # )
+    # torch.optim.Adam(model.parameters(), lr=config_args.rl_script_args.lr)
+
+    # TODO: this exclusion only makes sense with the warmup decay scheduler
+    # if other are attempted, a new condition should be used
+
+    # Instantiate environment with disabled version of the same LoRa model --> the original unmodified + untrained model
     if config_args.rl_script_args.cohere_key:
         # TODO: investigate this versioning issue
         # version = "2022-12-06"
@@ -185,7 +242,9 @@ def init_game(config_args, accelerator):
         env_llm = CohereWrapper(co)
         # accelerator.print(f"using cohere version {version} as env_llm")
     else:
-        env_llm = StrToStrWrapper(fmodel, tokenizer, accelerator=accelerator)
+        env_llm = StrToStrWrapper(
+            lora_model, tokenizer, accelerator=accelerator, disable_adapters=True
+        )
     env = LLMComEnvText(
         env_llm,
         config_args.rl_script_args.dataset_path,
@@ -204,28 +263,6 @@ def init_game(config_args, accelerator):
     else:
         venv = None
 
-    accelerator.print(f"Done. Adding LoRa to {model_path} agent...")
-    peft_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
-        inference_mode=False,
-        r=config_args.rl_script_args.lora_r,
-        lora_alpha=32,
-        lora_dropout=0,
-    )
-    lora_model = get_peft_model(model, peft_config)
-    lora_model.print_trainable_parameters()
-    # wrap the LoRa model
-    wmodel = StrToStrWrapper(lora_model, tokenizer, accelerator, critic, c_module)
-
-    optimizer = DummyOptim(wmodel.parameters(), lr=config_args.rl_script_args.lr)
-    # optimizer graveyard, rip
-    # optimizer = deepspeed.ops.adam.DeepSpeedCPUAdam(
-    #     wmodel.parameters(), lr=config_args.rl_script_args.lr
-    # )
-    # torch.optim.Adam(model.parameters(), lr=config_args.rl_script_args.lr)
-
-    # TODO: this exclusion only makes sense with the warmup decay scheduler
-    # if other are attempted, a new condition should be used
     lr_scheduler = (
         DummyScheduler(
             optimizer,
@@ -251,12 +288,8 @@ def init_game(config_args, accelerator):
     wmodel, env.dataloader, optimizer, lr_scheduler = accelerator.prepare(
         wmodel, env.dataloader, optimizer, lr_scheduler
     )
-    # for kl div
-    froz_model = StrToStrWrapper(fmodel, tokenizer, accelerator=accelerator).to(
-        accelerator.device
-    )
 
-    return froz_model, wmodel, env, venv, optimizer, lr_scheduler, buf, pad_token
+    return wmodel, env, venv, optimizer, lr_scheduler, buf, pad_token
 
 
 def evaluate(
@@ -298,7 +331,9 @@ def evaluate(
         o, r, done, infos = venv.step(a["text"])
         if done:
             # log the reward
-            accelerator.print(f">> >> Eval reward: {sum(r)/len(r)}, batch_size: {len(r)}")
+            accelerator.print(
+                f">> >> Eval reward: {sum(r)/len(r)}, batch_size: {len(r)}"
+            )
 
             if log_file is not None:
                 with open(log_file, "a", encoding="utf-8") as f:
